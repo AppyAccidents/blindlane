@@ -1,6 +1,5 @@
 // ============================================
-// Leaderboard Page
-// Shows voting statistics and which model is winning
+// Leaderboard Page - Terminal Theme
 // ============================================
 
 'use client';
@@ -48,206 +47,185 @@ export default function LeaderboardPage() {
     }
   };
 
-  // Helper to get display name
   const getDisplayName = (modelName: string) => {
     if (modelName === 'gpt-4o-mini') return 'GPT-4o Mini';
     if (modelName === 'claude-3-5-haiku') return 'Claude 3.5 Haiku';
     return modelName;
   };
 
-  // Helper to get color
   const getModelColor = (modelName: string) => {
-    if (modelName === 'gpt-4o-mini') return 'blue';
-    if (modelName === 'claude-3-5-haiku') return 'purple';
+    if (modelName === 'gpt-4o-mini') return 'cyan';
+    if (modelName === 'claude-3-5-haiku') return 'orange';
     return 'gray';
   };
 
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="text-cyan-400 font-mono animate-pulse">LOADING_LEADERBOARD_DATA...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg bg-red-50 p-6 text-center text-red-600 dark:bg-red-950 dark:text-red-400">
-        {error}
+      <div className="terminal-panel border-red-500/30 text-red-400 text-center p-6 font-mono">
+        [ERROR] {error}
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="text-center text-slate-600 dark:text-slate-400">
-        No data available
+      <div className="text-center text-cyan-600 font-mono">
+        NO_DATA_AVAILABLE
       </div>
     );
   }
 
   const { stats, summary } = data;
-  
-  // Sort by win rate
   const sortedStats = [...stats].sort((a, b) => b.win_rate - a.win_rate);
   const leader = sortedStats[0];
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white">
-          Leaderboard
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-400 font-mono">
+          <Trophy className="w-3 h-3" />
+          LIVE_RANKINGS
+        </div>
+        <h1 className="text-3xl font-bold text-cyan-400 font-mono glow-cyan">
+          &gt; Leaderboard
         </h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          See which AI model users prefer overall
+        <p className="text-cyan-700 font-mono text-sm">
+          Aggregate voting results across all comparisons
         </p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 flex items-center gap-2 text-slate-500">
-            <Users className="h-4 w-4" />
-            <span className="text-sm font-medium">Total Comparisons</span>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">
-            {summary.totalComparisons.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 flex items-center gap-2 text-slate-500">
-            <DollarSign className="h-4 w-4" />
-            <span className="text-sm font-medium">Today's Cost</span>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">
-            {formatCost(summary.totalCost)}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 flex items-center gap-2 text-slate-500">
-            <Trophy className="h-4 w-4" />
-            <span className="text-sm font-medium">Current Leader</span>
-          </div>
-          <p className="text-xl font-bold text-slate-900 dark:text-white">
-            {leader ? getDisplayName(leader.model_name) : 'N/A'}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 flex items-center gap-2 text-slate-500">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-sm font-medium">Budget Used</span>
-          </div>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">
-            {summary.budgetPercentUsed.toFixed(0)}%
-          </p>
-        </div>
+        <SummaryCard
+          icon={<Users className="w-5 h-5" />}
+          label="TOTAL_COMPARISONS"
+          value={summary.totalComparisons.toLocaleString()}
+        />
+        <SummaryCard
+          icon={<DollarSign className="w-5 h-5" />}
+          label="TODAY_COST"
+          value={formatCost(summary.totalCost)}
+        />
+        <SummaryCard
+          icon={<Trophy className="w-5 h-5" />}
+          label="CURRENT_LEADER"
+          value={leader ? getDisplayName(leader.model_name) : 'N/A'}
+        />
+        <SummaryCard
+          icon={<TrendingUp className="w-5 h-5" />}
+          label="BUDGET_USED"
+          value={`${summary.budgetPercentUsed.toFixed(0)}%`}
+        />
       </div>
 
-      {/* Budget Progress Bar */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-900 dark:text-white">
-            Daily Budget
+      {/* Budget Progress */}
+      <div className="terminal-panel">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-cyan-400 font-mono font-semibold flex items-center gap-2">
+            <span>$</span>
+            <span>Daily Budget Usage</span>
           </h2>
-          <span className="text-sm text-slate-600 dark:text-slate-400">
+          <span className="text-sm text-cyan-600 font-mono">
             {formatCost(summary.totalCost)} / {formatCost(summary.budgetLimit)}
           </span>
         </div>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div className="h-3 w-full overflow-hidden rounded-full bg-cyan-900/30">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-orange-400 transition-all duration-500"
             style={{ width: `${Math.min(summary.budgetPercentUsed, 100)}%` }}
           />
         </div>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-xs text-cyan-700 font-mono">
           {summary.budgetRemaining > 0
             ? `${formatCost(summary.budgetRemaining)} remaining today`
-            : 'Daily budget exhausted'}
+            : '[WARNING] Daily budget exhausted'}
         </p>
       </div>
 
-      {/* Model Stats */}
+      {/* Model Rankings */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-          Model Performance
+        <h2 className="text-cyan-400 font-mono font-semibold flex items-center gap-2">
+          <span>◈</span>
+          <span>Model Rankings</span>
         </h2>
         
         {sortedStats.map((stat, index) => {
           const color = getModelColor(stat.model_name);
+          const isCyan = color === 'cyan';
           const isLeader = index === 0 && stat.total_votes > 0;
           
           return (
             <div
               key={stat.model_name}
-              className={`rounded-xl border bg-white p-6 transition-all dark:bg-slate-900 ${
-                isLeader
-                  ? 'border-yellow-400 ring-2 ring-yellow-400/20'
-                  : 'border-slate-200 dark:border-slate-800'
-              }`}
+              className={`terminal-panel ${isLeader ? 'border-yellow-500/50' : ''}`}
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {/* Left: Model Info */}
                 <div className="flex items-center gap-4">
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-full bg-${color}-100 dark:bg-${color}-900`}
-                  >
-                    {isLeader && (
-                      <Trophy className={`h-6 w-6 text-yellow-600`} />
-                    )}
-                    {!isLeader && (
-                      <span className={`text-lg font-bold text-${color}-600 dark:text-${color}-400`}>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded border ${
+                    isLeader ? 'border-yellow-500/50 bg-yellow-500/10' : 
+                    isCyan ? 'border-cyan-500/30 bg-cyan-500/10' : 'border-orange-500/30 bg-orange-500/10'
+                  }`}>
+                    {isLeader ? (
+                      <Trophy className="h-6 w-6 text-yellow-500" />
+                    ) : (
+                      <span className={`text-lg font-bold ${isCyan ? 'text-cyan-400' : 'text-orange-400'}`}>
                         #{index + 1}
                       </span>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    <h3 className={`text-lg font-semibold font-mono ${isCyan ? 'text-cyan-400' : 'text-orange-400'}`}>
                       {getDisplayName(stat.model_name)}
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-cyan-700 font-mono">
                       {stat.total_votes} votes
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-center">
+                {/* Center: Win/Loss/Tie */}
+                <div className="grid grid-cols-3 gap-6 text-center">
                   <div>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {stat.wins}
-                    </p>
-                    <p className="text-xs text-slate-500">Wins</p>
+                    <p className="text-2xl font-bold text-green-400 font-mono">{stat.wins}</p>
+                    <p className="text-xs text-cyan-700 font-mono">WINS</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {stat.losses}
-                    </p>
-                    <p className="text-xs text-slate-500">Losses</p>
+                    <p className="text-2xl font-bold text-red-400 font-mono">{stat.losses}</p>
+                    <p className="text-xs text-cyan-700 font-mono">LOSSES</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {stat.ties}
-                    </p>
-                    <p className="text-xs text-slate-500">Ties</p>
+                    <p className="text-2xl font-bold text-yellow-400 font-mono">{stat.ties}</p>
+                    <p className="text-xs text-cyan-700 font-mono">TIES</p>
                   </div>
                 </div>
 
+                {/* Right: Win Rate */}
                 <div className="text-right">
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white">
+                  <p className="text-3xl font-bold text-cyan-400 font-mono">
                     {stat.total_votes > 0 ? `${stat.win_rate}%` : 'N/A'}
                   </p>
-                  <p className="text-sm text-slate-500">Win Rate</p>
+                  <p className="text-sm text-cyan-700 font-mono">WIN_RATE</p>
                 </div>
               </div>
 
-              {/* Win rate bar */}
+              {/* Win Rate Bar */}
               {stat.total_votes > 0 && (
                 <div className="mt-4">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-cyan-900/30">
                     <div
-                      className={`h-full rounded-full bg-${color}-500 transition-all duration-500`}
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        isCyan ? 'bg-cyan-400' : 'bg-orange-400'
+                      }`}
                       style={{ width: `${stat.win_rate}%` }}
                     />
                   </div>
@@ -258,20 +236,41 @@ export default function LeaderboardPage() {
         })}
 
         {sortedStats.length === 0 && (
-          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900">
-            <Trophy className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-            <p className="text-slate-600 dark:text-slate-400">
+          <div className="terminal-panel p-12 text-center">
+            <Trophy className="mx-auto mb-4 h-12 w-12 text-cyan-800" />
+            <p className="text-cyan-600 font-mono">
               No votes yet. Be the first to compare!
             </p>
             <a
               href="/"
-              className="mt-4 inline-block rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700"
+              className="btn-cyber inline-flex mt-4"
             >
               Start Comparing
             </a>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Summary Card Component
+function SummaryCard({ 
+  icon, 
+  label, 
+  value 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string;
+}) {
+  return (
+    <div className="terminal-panel">
+      <div className="mb-2 flex items-center gap-2 text-cyan-600">
+        {icon}
+        <span className="text-xs font-mono">{label}</span>
+      </div>
+      <p className="text-2xl font-bold text-cyan-400 font-mono">{value}</p>
     </div>
   );
 }
