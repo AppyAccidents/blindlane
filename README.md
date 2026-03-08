@@ -1,402 +1,282 @@
 # 🎯 BlindLane
 
-> The Pepsi Challenge for AI - Compare GPT-4o Mini vs Claude 3.5 Haiku anonymously
+> **Blind taste testing for content. Arena UX. Editor-first UI.**
 
-BlindLane is a blind comparison tool for AI language models. Enter a prompt, two AI models respond anonymously, and you vote for the better one—without brand bias.
-
-![BlindLane Screenshot](https://placeholder-for-screenshot.png)
-
-## ✨ Features
-
-- 🤖 **Two Models**: GPT-4o Mini vs Claude 3.5 Haiku
-- 🎲 **Random Assignment**: Models are randomly assigned A/B labels
-- 🗳️ **Blind Voting**: Vote before seeing which model is which
-- 📊 **Leaderboard**: See which model users prefer overall
-- 💰 **Cost Transparency**: See exactly how much each comparison costs
-- 🚫 **Rate Limiting**: 10 comparisons per day per IP
-- 📱 **Mobile Responsive**: Works on all devices
-
-## 🚀 Quick Start (For Non-Technical Founders)
-
-Don't worry if you've never coded before. I'll walk you through everything step by step.
-
-### Prerequisites
-
-You'll need:
-- A Mac or Windows computer
-- A GitHub account (free)
-- A Vercel account (free)
-- A Supabase account (free tier)
-- API keys from OpenAI and Anthropic (they give you free credits to start)
-
-### Step 1: Set Up Your Development Environment
-
-#### On Mac:
-
-1. **Install Homebrew** (package manager):
-   ```bash
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-   ```
-
-2. **Install Node.js** (JavaScript runtime):
-   ```bash
-   brew install node
-   ```
-
-3. **Install Git** (version control):
-   ```bash
-   brew install git
-   ```
-
-4. **Install VS Code** (code editor):
-   - Download from: https://code.visualstudio.com/
-   - Install the "ES7+ React/Redux/React-Native snippets" extension
-
-#### On Windows:
-
-1. **Install Node.js**:
-   - Download from: https://nodejs.org/en/download/
-   - Choose the LTS version
-
-2. **Install Git**:
-   - Download from: https://git-scm.com/download/win
-
-3. **Install VS Code**:
-   - Download from: https://code.visualstudio.com/
-
-### Step 2: Get Your API Keys
-
-#### OpenAI API Key
-
-1. Go to https://platform.openai.com/signup
-2. Create an account (you get $5 in free credits)
-3. Go to https://platform.openai.com/api-keys
-4. Click "Create new secret key"
-5. Copy the key (you won't see it again!)
-
-#### Anthropic API Key
-
-1. Go to https://console.anthropic.com/
-2. Create an account (you get $5 in free credits)
-3. Go to Settings → API Keys
-4. Click "Create Key"
-5. Copy the key
-
-### Step 3: Set Up Supabase (Database)
-
-1. Go to https://supabase.com/
-2. Sign up with GitHub
-3. Click "New Project"
-4. Name it "blindlane"
-5. Choose a region close to your users (e.g., US East)
-6. Click "Create new project"
-7. Wait for the project to be created (~2 minutes)
-
-#### Get Your Supabase Keys:
-
-1. In your Supabase dashboard, click the "Connect" button
-2. Click "App frameworks"
-3. Copy:
-   - `SUPABASE_URL` (looks like: https://abcdefg123456.supabase.co)
-   - `SUPABASE_ANON_KEY` (long string of letters and numbers)
-
-#### Set Up the Database:
-
-1. In Supabase, go to the "SQL Editor" (left sidebar)
-2. Click "New query"
-3. Copy the contents of `supabase/migrations/001_initial_schema.sql` from this repo
-4. Paste it into the SQL Editor
-5. Click "Run"
-6. You should see "Success" in the output
-
-### Step 4: Deploy to Vercel
-
-#### Option A: One-Click Deploy (Easiest)
+BlindLane is an editor-first content creation platform that helps creators and teams generate multiple AI drafts, compare them anonymously, and publish platform-ready content.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AppyAccidents/blindlane)
 
-1. Click the button above
-2. Sign in with GitHub
-3. Vercel will:
-   - Clone the repo to your GitHub
-   - Deploy it automatically
-   - Give you a URL
+---
 
-#### Option B: Manual Deploy
+## ✨ What is BlindLane?
 
-1. Push this code to your own GitHub repo:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/YOUR_USERNAME/blindlane.git
-   git push -u origin main
-   ```
+Traditional AI writing tools make you pick a model first. BlindLane turns that around:
 
-2. Go to https://vercel.com/
-3. Sign up with GitHub
-4. Click "Add New Project"
-5. Import your `blindlane` repo
-6. Click "Deploy"
+1. **Write your prompt** in the editor
+2. **Generate 4 drafts** from multiple AI models (anonymously)
+3. **Compare in the Arena** — gallery view or side-by-side
+4. **Evaluate with AI** — tags and scores help you decide faster
+5. **Converge on a winner** — model identities revealed after you choose
+6. **Publish ready content** — formatted for LinkedIn, X, Email, Blog, Newsletter
 
-### Step 5: Configure Environment Variables
+**The key insight**: When you don't know which model wrote what, you choose based on quality, not brand bias.
 
-After deploying, you need to add your API keys:
+---
 
-1. In Vercel, go to your project
-2. Click "Settings" → "Environment Variables"
-3. Add these variables one by one:
+## 🚀 Quick Start
 
-| Name | Value | Where to Find |
-|------|-------|---------------|
-| `OPENAI_API_KEY` | sk-... | OpenAI dashboard |
-| `ANTHROPIC_API_KEY` | sk-ant-... | Anthropic console |
-| `NEXT_PUBLIC_SUPABASE_URL` | https://... | Supabase dashboard |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | eyJ... | Supabase dashboard |
-| `SUPABASE_SERVICE_ROLE_KEY` | eyJ... | Supabase dashboard → Project Settings → API |
-| `DAILY_BUDGET_LIMIT` | 10 | Just type "10" |
-| `RATE_LIMIT_PER_IP` | 10 | Just type "10" |
-| `MAX_PROMPT_LENGTH` | 1000 | Just type "1000" |
-| `API_TIMEOUT_SECONDS` | 15 | Just type "15" |
+### Prerequisites
 
-4. Click "Save"
-5. Click "Redeploy" (or push a small change to trigger a new deploy)
+- Node.js 18+
+- Git
+- API keys: [OpenAI](https://platform.openai.com/api-keys) & [Anthropic](https://console.anthropic.com/settings/keys)
+- [Supabase](https://supabase.com/) account (free tier)
 
-### Step 6: Test Your App
+### One-Click Deploy (Vercel)
 
-1. Go to your Vercel URL (e.g., https://blindlane.vercel.app)
-2. Enter a prompt like "Explain quantum computing"
-3. Click "Compare"
-4. Wait for both responses
-5. Vote for the better one
-6. See the reveal!
+1. Click the **Deploy with Vercel** button above
+2. Connect your GitHub account
+3. Add environment variables
+4. Deploy!
 
-## 💰 Cost Control
+### Local Development
 
-### Understanding Costs
-
-Each comparison costs approximately:
-- **GPT-4o Mini**: ~$0.0001 - $0.001 per comparison
-- **Claude 3.5 Haiku**: ~$0.0002 - $0.002 per comparison
-
-With the $10 daily budget limit:
-- You can handle ~5,000-10,000 comparisons per day
-- That's plenty for an MVP!
-
-### Budget Safety Features
-
-The app has multiple safety features:
-1. **Daily budget limit** (hard stop at $10)
-2. **Rate limiting** (10 comparisons per IP per day)
-3. **Max prompt length** (1000 characters)
-4. **API timeout** (15 seconds)
-5. **Token limits** (1000 tokens per response)
-
-### Setting Up Billing Alerts
-
-#### OpenAI:
-1. Go to https://platform.openai.com/settings/organization/billing/overview
-2. Click "Usage limits"
-3. Set "Hard limit" to $100/month
-
-#### Anthropic:
-1. Go to https://console.anthropic.com/settings/billing
-2. Set a monthly limit of $100
-
-## 🛠️ Development Guide
-
-### Running Locally
-
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/blindlane.git
-   cd blindlane
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Copy environment variables:
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. Edit `.env.local` with your API keys
-
-5. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-6. Open http://localhost:3000 in your browser
-
-### Project Structure
-
-```
-blindlane/
-├── app/                    # Next.js app router
-│   ├── api/               # API routes
-│   │   ├── comparison/    # Main comparison API
-│   │   │   ├── route.ts
-│   │   │   └── vote/
-│   │   │       └── route.ts
-│   │   └── stats/         # Leaderboard stats API
-│   │       └── route.ts
-│   ├── leaderboard/       # Leaderboard page
-│   │   └── page.tsx
-│   ├── about/            # About page
-│   │   └── page.tsx
-│   ├── page.tsx          # Home page (main UI)
-│   ├── layout.tsx        # Root layout
-│   └── globals.css       # Global styles
-├── lib/                   # Utility functions
-│   ├── utils.ts
-│   ├── supabase.ts
-│   └── constants.ts
-├── types/                 # TypeScript types
-│   └── index.ts
-├── supabase/             # Database migrations
-│   └── migrations/
-│       └── 001_initial_schema.sql
-├── public/               # Static files
-├── package.json          # Dependencies
-├── next.config.mjs       # Next.js config
-├── tailwind.config.ts    # Tailwind CSS config
-└── README.md             # This file
-```
-
-### Key Concepts Explained
-
-#### Why Next.js?
-
-Next.js is a React framework that makes it easy to build fast, SEO-friendly web apps. Think of it as:
-- **React**: The library for building user interfaces
-- **Next.js**: The framework that adds server-side rendering, routing, and API routes
-
-#### What is an API Route?
-
-An API route is a special file in Next.js that handles server-side logic. When you call `/api/comparison`, it runs code on the server (not in the browser) that:
-1. Receives your prompt
-2. Calls OpenAI and Anthropic APIs
-3. Returns the responses
-
-This keeps your API keys secret (they never go to the browser).
-
-#### What is Supabase?
-
-Supabase is a "backend-as-a-service" that gives you:
-- PostgreSQL database (stores comparisons, votes)
-- Authentication (user login)
-- Real-time subscriptions
-- Serverless functions
-
-Think of it as a more developer-friendly Firebase.
-
-#### What is Promise.all?
-
-In `app/api/comparison/route.ts`, we use `Promise.all` to call both APIs at the same time:
-
-```typescript
-const [resultA, resultB] = await Promise.all([
-  callModel(modelA, prompt),  // Call OpenAI
-  callModel(modelB, prompt),  // Call Anthropic
-]);
-```
-
-This is like sending two letters at the same time instead of waiting for the first to arrive before sending the second. Much faster!
-
-## 🚨 Troubleshooting
-
-### "Module not found" errors
-
-Run:
 ```bash
+# 1. Clone the repo
+git clone https://github.com/AppyAccidents/blindlane.git
+cd blindlane
+
+# 2. Install dependencies
 npm install
+
+# 3. Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your API keys
+
+# 4. Set up Supabase database
+# Run the SQL in supabase/migrations/001_initial_schema.sql
+
+# 5. Run the development server
+npm run dev
+
+# 6. Open http://localhost:3000
 ```
 
-### "API key invalid" errors
+---
 
-1. Double-check your environment variables in Vercel
-2. Make sure you've redeployed after adding them
-3. Verify the keys are correct (no extra spaces)
+## 🎨 The Editor + Arena Pattern
 
-### Database connection errors
+BlindLane uses a three-zone workspace:
 
-1. Check that you ran the SQL migration in Supabase
-2. Verify your Supabase URL and keys are correct
-3. Make sure your Supabase project is active (not paused)
+```
+┌──────────────────────────────────────────────────────────────┐
+│  HEADER                                                      │
+├──────────┬─────────────────────────┬─────────────────────────┤
+│          │                         │                         │
+│  LEFT    │       CENTER            │        RIGHT            │
+│  RAIL    │       EDITOR            │        ARENA            │
+│          │                         │                         │
+│  • Work- │  ┌─────────────────┐   │  ┌─────────────────┐   │
+│    space  │  │ Prompt Input    │   │  │ GALLERY VIEW    │   │
+│  • Client │  │                 │   │  │                 │   │
+│  • Brand  │  │ [Generate ▼]    │   │  │ Draft A  Draft B│   │
+│    Kit    │  └─────────────────┘   │  │ Draft C  Draft D│   │
+│  • Camp-  │                         │  │                 │   │
+│    aign   │  ┌─────────────────┐   │  │ [Compare Mode]  │   │
+│  • History│  │ Working Draft   │   │  │                 │   │
+│          │  │ (after converge)│   │  └─────────────────┘   │
+│          │  └─────────────────┘   │                         │
+└──────────┴─────────────────────────┴─────────────────────────┘
+```
 
-### Rate limit exceeded
+### Arena Modes
 
-The app limits users to 10 comparisons per day per IP. This is expected behavior to control costs.
+**Gallery View**: Grid of draft cards with evaluator chips (tone, clarity, platform fit)
 
-### "Build failed" on Vercel
+**Compare View**: Side-by-side comparison with linked scrolling
 
-1. Check the build logs in Vercel
-2. Make sure all environment variables are set
-3. Try redeploying
+**Converge**: Select winner → model identities revealed → winner becomes working draft
 
-## 📈 Monitoring Your App
+---
 
-### Vercel Analytics
+## 🏗️ Architecture
 
-1. Go to your project in Vercel
-2. Click "Analytics" tab
-3. See how many visitors you have
+### Draft Generation
 
-### Supabase Usage
+```
+User Prompt
+     ↓
+[2 LLMs] × [2 Variants] = 4 Drafts
+     ↓
+Anonymous Drafts (A, B, C, D)
+     ↓
+Evaluator AI (tags, scores)
+     ↓
+Arena (Gallery/Compare)
+     ↓
+Converge (Winner selected)
+     ↓
+Reveal (Model identity shown)
+     ↓
+Editor (Working draft)
+     ↓
+Platform Format (LinkedIn, X, Email, etc.)
+```
 
-1. Go to your Supabase dashboard
-2. Click "Database" → "Usage"
-3. Monitor database size and connections
+### Variants System
 
-### API Usage
+Each draft uses an intentional angle:
 
-#### OpenAI:
-https://platform.openai.com/usage
+| Variant | Style | Use Case |
+|---------|-------|----------|
+| Concise | Direct, punchy | Quick updates, announcements |
+| Story-driven | Narrative hook | Engagement, emotional connection |
+| Contrarian | Counter-intuitive | Thought leadership |
+| Empathetic | Warm, human | Support, community building |
 
-#### Anthropic:
-https://console.anthropic.com/settings/usage
+### Evaluator AI
 
-## 🔒 Security Best Practices
+A separate AI model scores drafts without revealing identities:
 
-1. **Never commit `.env.local`** - It contains your API keys
-2. **Rotate API keys** every 90 days
-3. **Monitor usage** regularly for unexpected spikes
-4. **Set hard limits** on API spending
-5. **Enable 2FA** on all accounts (GitHub, Vercel, Supabase, OpenAI, Anthropic)
+- **Tags**: Tone, angle, audience, industry fit
+- **Scores**: Clarity, human feel, platform fit (0-100)
+- **Clustering**: Groups near-duplicates
+- **Shortlist**: "Top pick" and "Runner-up" badges
 
-## 🎯 Next Steps (After MVP)
+---
 
-Once you have users and want to add more features:
+## 💻 Tech Stack
 
-1. **Add more models**: GPT-4, Claude Opus, Gemini, etc.
-2. **User accounts**: Let users see their history
-3. **Share results**: Let users share comparisons on Twitter/X
-4. **Categories**: Tag comparisons (coding, writing, analysis)
-5. **Comments**: Let users explain why they voted
-6. **API**: Let other developers use your comparison data
-7. **Mobile app**: Build a React Native app
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS + shadcn/ui primitives (default token contract) |
+| Database | Supabase (PostgreSQL) |
+| AI APIs | OpenAI, Anthropic |
+| Icons | Lucide React |
+| Deployment | Vercel |
 
-## 🤝 Getting Help
+---
 
-If you're stuck:
+## ⚙️ Environment Variables
 
-1. **Check the logs**:
-   - Vercel: Project → Deployments → Latest → Functions
-   - Browser: Press F12 → Console tab
+```bash
+# Required API Keys
+OPENAI_API_KEY=sk-your-openai-key
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 
-2. **Google the error** - copy and paste the error message
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-key
 
-3. **Ask ChatGPT/Claude** - paste your code and error
+# Cost Control
+MAX_DRAFTS_PER_RUN=4          # MVP: 4 drafts max
+PER_RUN_SPEND_CAP=1.0         # Max $ per generation
+DAILY_USER_SPEND_CAP=10.0     # Max $ per user per day
+```
 
-4. **Open an issue** on this GitHub repo
+---
+
+## 🧪 Testing
+
+We use Jest and React Testing Library.
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+
+# Watch mode for development
+npm run test:watch
+```
+
+See [TESTING.md](./TESTING.md) for detailed testing documentation.
+
+---
+
+## 🗺️ Roadmap
+
+### MVP (Current)
+
+- ✅ Editor-first three-zone layout
+- ✅ 2 LLMs × 2 variants = 4 drafts
+- ✅ Gallery view (2×2 grid)
+- ✅ Compare view (2-up side-by-side)
+- ✅ Converge action
+- 🔄 Evaluator-lite (tags, scores)
+- 🔄 Platform formatting (LinkedIn, Email)
+- 🔄 Reveal panel
+
+### Phase 2: Enhanced Arena
+
+- 8 LLMs support
+- 4 variants = 32 drafts
+- Progressive gallery loading
+- Filters and clustering
+- 3-up compare view
+- Keyboard shortcuts
+
+### Phase 3: Agency Mode
+
+- Multi-client workspaces
+- Brand kits (voice, banned phrases, examples)
+- Campaigns and content calendars
+- Approvals workflow
+- Comments and version history
+
+### Phase 4: Full Platform
+
+- All platform formats (X, Blog, Newsletter)
+- Scheduling and integrations
+- Analytics and performance tracking
+- API for agencies
+
+---
+
+## 📊 Success Metrics
+
+We're building toward:
+
+- **Convergence rate**: % of runs where user picks a winner within 3 minutes
+- **Publish rate**: % of converged drafts that get published
+- **Repeat usage**: Users returning within 7 days
+- **Time savings**: User-reported time reduction in content creation
+- **Cost efficiency**: Average cost per quality content piece
+
+---
+
+## 📄 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [PRD.md](./PRD.md) | Product requirements and vision |
+| [AGENTS.md](./AGENTS.md) | Guidelines for AI agents working on the codebase |
+| [ROADMAP.md](./ROADMAP.md) | Detailed development roadmap |
+| [DESIGN.md](./DESIGN.md) | UI/UX design system |
+| [TESTING.md](./TESTING.md) | Testing documentation |
+
+---
+
+## 🤝 Contributing
+
+1. Read [AGENTS.md](./AGENTS.md) first
+2. Fork the repository
+3. Create a feature branch: `git checkout -b feature/arena-compare`
+4. Commit changes: `git commit -m 'Add 3-up compare view'`
+5. Push to branch: `git push origin feature/arena-compare`
+6. Open a Pull Request
+
+---
 
 ## 📄 License
 
-MIT License - feel free to use this for your own projects!
+MIT License - see [LICENSE](./LICENSE) for details.
+
+---
 
 ## 🙏 Credits
 
@@ -410,6 +290,37 @@ Built with:
 
 ---
 
-**Happy comparing!** 🎉
+**Quality certainty without bias.** 🎯
 
-Remember: The goal isn't to find the "best" model—it's to find the best model *for your specific use case*.
+*Last Updated: March 2026*
+
+---
+
+## March 2026 MVP Update
+
+Implemented Arena MVP v2 flow:
+
+- Editor-first layout with Arena gallery + compare + converge flow
+- 2 models × 2 variants = 4 anonymous drafts
+- Evaluator-lite tags/scores + shortlist labels
+- Reveal data only after converge (model/variant/cost/latency/tokens)
+- Formatting endpoints for LinkedIn and Email with copyable output
+
+### API Endpoints (Current)
+
+- `POST /api/comparison` -> generate run preview (`run` + `comparePairs`)
+- `POST /api/comparison/vote` -> record pair vote (`BETTER_A`, `BETTER_B`, `TIE`, `SKIP`)
+- `POST /api/comparison/converge` -> converge winner + reveal payload
+- `POST /api/format` -> platform formatting (`linkedin`, `email`)
+
+### Added Environment Variables
+
+- `ARENA_MVP_V2`
+- `MAX_CONCURRENT_GENERATIONS_GLOBAL`
+- `MAX_CONCURRENT_GENERATIONS_PER_IP`
+
+### Testing Additions
+
+- Unit: generation, evaluator, arena reducer, LinkedIn formatter, Email formatter
+- Integration: comparison, vote, converge, format, stats
+- Type gate: `npm run typecheck`

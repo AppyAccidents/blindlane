@@ -1,99 +1,102 @@
-// ============================================
-// Admin Layout - Terminal Theme
-// ============================================
+'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ArrowLeft, BarChart3, LayoutDashboard, List, Menu, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/comparisons', label: 'Comparisons', icon: List },
+  { href: '/admin/stats', label: 'Stats', icon: BarChart3 },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
+];
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
-    <div className="admin-grid">
-      {/* Admin Sidebar */}
-      <aside className="admin-sidebar">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-orange-500 text-lg">⚡</span>
-            <span className="text-orange-400 font-bold font-mono">ADMIN_PANEL</span>
-          </div>
-          <p className="text-xs text-cyan-700 font-mono">v0.1.0-alpha</p>
-        </div>
-        
-        <nav className="space-y-1">
-          <AdminNavLink href="/admin" icon="◈" exact>
-            Dashboard
-          </AdminNavLink>
-          <AdminNavLink href="/admin/comparisons" icon="◉">
-            Comparisons
-          </AdminNavLink>
-          <AdminNavLink href="/admin/stats" icon="◊">
-            Analytics
-          </AdminNavLink>
-          <AdminNavLink href="/admin/settings" icon="⚙">
-            Settings
-          </AdminNavLink>
-        </nav>
-        
-        <div className="mt-8 pt-6 border-t border-cyan-500/20">
-          <Link 
-            href="/"
-            className="flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-400 transition-colors font-mono"
-          >
-            <span>←</span>
-            <span>Return to Site</span>
-          </Link>
-        </div>
-        
-        {/* System Status */}
-        <div className="mt-auto pt-6">
-          <div className="p-3 rounded border border-cyan-500/20 bg-black/30">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-green-400 font-mono">SYSTEM_OK</span>
-            </div>
-            <div className="space-y-1 text-xs font-mono">
-              <div className="flex justify-between text-cyan-700">
-                <span>Uptime:</span>
-                <span>99.9%</span>
-              </div>
-              <div className="flex justify-between text-cyan-700">
-                <span>Latency:</span>
-                <span>&lt;100ms</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="grid min-h-[calc(100vh-8rem)] gap-4 lg:grid-cols-[260px_1fr]">
+      <aside className="hidden lg:block">
+        <AdminNav pathname={pathname} />
       </aside>
-      
-      {/* Admin Content */}
-      <main className="admin-content">
-        {children}
-      </main>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between lg:hidden">
+          <h1 className="text-base font-semibold">Admin Panel</h1>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Open admin navigation">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-card">
+              <SheetHeader>
+                <SheetTitle>Admin</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <AdminNav pathname={pathname} compact />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        <main>{children}</main>
+      </div>
     </div>
   );
 }
 
-// Admin Navigation Link
-function AdminNavLink({
-  href,
-  children,
-  icon,
-  exact = false,
-}: {
-  href: string;
-  children: React.ReactNode;
-  icon: string;
-  exact?: boolean;
-}) {
+function AdminNav({ pathname, compact = false }: { pathname: string; compact?: boolean }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 px-3 py-2 rounded text-sm text-cyan-400/70 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all font-mono"
-    >
-      <span className="text-cyan-600">{icon}</span>
-      <span>{children}</span>
-    </Link>
+    <Card className={compact ? 'border-none bg-transparent shadow-none' : 'sticky top-20'}>
+      <CardContent className="space-y-2 p-4">
+        <div className="mb-2 px-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Admin</p>
+          <p className="text-sm font-semibold">BlindLane Admin</p>
+        </div>
+
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+
+          return (
+            <Button
+              key={item.href}
+              asChild
+              variant={isActive ? 'secondary' : 'ghost'}
+              className={cn('w-full justify-start', isActive ? 'text-foreground' : 'text-muted-foreground')}
+            >
+              <Link href={item.href}>
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Link>
+            </Button>
+          );
+        })}
+
+        <div className="pt-3">
+          <Button asChild variant="outline" className="w-full justify-start">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Workspace
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

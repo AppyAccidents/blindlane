@@ -1,338 +1,220 @@
-// ============================================
-// Admin Analytics / Stats Page
-// Detailed analytics and charts
-// ============================================
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { formatCost } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface StatsData {
+  models: { name: string; wins: number; losses: number; ties: number; winRate: number; totalVotes: number }[];
+  summary: {
+    totalComparisons: number;
+    totalCost: number;
+    budgetLimit: number;
+    budgetRemaining: number;
+    budgetPercentUsed: number;
+  };
+}
 
 export default function AdminStats() {
-  const [timeRange, setTimeRange] = useState('7d');
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = useCallback(() => {
+    setError(null);
+    fetch('/api/stats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) {
+          setError(data.error || 'Failed to load stats');
+          return;
+        }
+
+        const models = (data.stats || []).map(
+          (s: { model_name: string; wins: number; losses: number; ties: number; total_votes: number; win_rate: number }) => ({
+            name: s.model_name,
+            wins: s.wins,
+            losses: s.losses,
+            ties: s.ties,
+            winRate: s.win_rate || 0,
+            totalVotes: s.total_votes,
+          })
+        );
+
+        setStats({
+          models,
+          summary: {
+            totalComparisons: data.summary?.totalComparisons ?? 0,
+            totalCost: data.summary?.totalCost ?? 0,
+            budgetLimit: data.summary?.budgetLimit ?? 10,
+            budgetRemaining: data.summary?.budgetRemaining ?? 0,
+            budgetPercentUsed: data.summary?.budgetPercentUsed ?? 0,
+          },
+        });
+      })
+      .catch(() => setError('Unable to fetch analytics'));
+  }, []);
 
   useEffect(() => {
-    // Simulated data
-    setStats({
-      comparisons: {
-        total: 1247,
-        voted: 982,
-        tie: 89,
-        byDay: [23, 45, 38, 52, 41, 35, 28],
-      },
-      models: {
-        gpt4o: { wins: 648, losses: 334, ties: 45, cost: 0.38 },
-        claude: { wins: 334, losses: 648, ties: 44, cost: 0.52 },
-      },
-      costs: {
-        total: 0.901,
-        daily: [0.045, 0.089, 0.076, 0.104, 0.082, 0.070, 0.056],
-        projected: 4.20,
-      },
-      users: {
-        unique: 156,
-        returning: 34,
-        avgPerUser: 8,
-      },
-      prompts: {
-        avgLength: 156,
-        categories: [
-          { name: 'Coding', count: 423 },
-          { name: 'Writing', count: 312 },
-          { name: 'Analysis', count: 267 },
-          { name: 'Creative', count: 198 },
-          { name: 'Other', count: 47 },
-        ],
-      },
-    });
-  }, [timeRange]);
+    fetchStats();
+  }, [fetchStats]);
 
-  if (!stats) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-cyan-400 font-mono animate-pulse">LOADING_ANALYTICS...</div>
+      <div className="space-y-6">
+        <header className="border-l-4 border-primary pl-6">
+          <h1 className="font-serif text-2xl font-black tracking-tight uppercase">Analytics</h1>
+        </header>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-8">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchStats}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  if (!stats) {
+    return <p className="text-sm text-muted-foreground">Loading analytics...</p>;
+  }
+
+  const totalVotes = stats.models.reduce((sum, m) => sum + m.totalVotes, 0);
+  const voteRate = stats.summary.totalComparisons > 0
+    ? Math.round((totalVotes / 2 / stats.summary.totalComparisons) * 100)
+    : 0;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-cyan-400 font-mono mb-1">
-            &gt; Analytics
-          </h1>
-          <p className="text-cyan-700 text-sm font-mono">
-            Detailed metrics and insights
-          </p>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="border-l-4 border-primary pl-6">
+          <h1 className="font-serif text-2xl font-black tracking-tight uppercase">Analytics</h1>
+          <p className="font-sans text-sm text-muted-foreground">Usage, quality, and cost metrics.</p>
         </div>
-        
-        {/* Time Range Selector */}
-        <div className="flex items-center gap-2">
-          {['24h', '7d', '30d', '90d'].map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-3 py-1.5 rounded text-xs font-mono transition-all ${
-                timeRange === range
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
-                  : 'bg-transparent text-cyan-600 border border-cyan-500/20 hover:border-cyan-500/40'
-              }`}
-            >
-              {range === '24h' ? '24H' : range === '7d' ? '7D' : range === '30d' ? '30D' : '90D'}
-            </button>
+      </header>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric label="Total Comparisons" value={stats.summary.totalComparisons.toLocaleString()} />
+        <Metric label="Vote Rate" value={`${voteRate}%`} />
+        <Metric label="Today's Cost" value={formatCost(stats.summary.totalCost, 2)} />
+        <Metric label="Budget Remaining" value={formatCost(stats.summary.budgetRemaining, 2)} />
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Budget Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span>Daily budget usage</span>
+                <span className="text-muted-foreground">{stats.summary.budgetPercentUsed.toFixed(1)}%</span>
+              </div>
+              <div className="h-2 bg-muted">
+                <div
+                  className={`h-2 ${stats.summary.budgetPercentUsed > 80 ? 'bg-destructive' : 'bg-primary'}`}
+                  style={{ width: `${Math.min(100, stats.summary.budgetPercentUsed)}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {formatCost(stats.summary.totalCost, 2)} of {formatCost(stats.summary.budgetLimit, 2)} daily limit
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Daily Trends</CardTitle>
+              <Badge variant="secondary">Coming soon</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="py-4 text-sm text-muted-foreground">
+              Daily comparison and cost charts will appear here once historical tracking is enabled.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      {stats.models.length > 0 ? (
+        <section className="grid gap-4 lg:grid-cols-3">
+          {stats.models.map((model) => (
+            <ModelCard
+              key={model.name}
+              label={model.name}
+              wins={model.wins}
+              losses={model.losses}
+              ties={model.ties}
+              winRate={model.winRate}
+              totalVotes={model.totalVotes}
+            />
           ))}
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Total Comparisons"
-          value={stats.comparisons.total.toLocaleString()}
-          change="+12.5%"
-          positive={true}
-        />
-        <MetricCard
-          label="Vote Rate"
-          value={`${Math.round((stats.comparisons.voted / stats.comparisons.total) * 100)}%`}
-          change="+3.2%"
-          positive={true}
-        />
-        <MetricCard
-          label="Total Cost"
-          value={formatCost(stats.costs.total)}
-          change="-8.1%"
-          positive={true}
-        />
-        <MetricCard
-          label="Active Users"
-          value={stats.users.unique.toString()}
-          change="+24"
-          positive={true}
-        />
-      </div>
-
-      {/* Two Column Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Daily Comparisons Chart */}
-        <div className="terminal-panel">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-cyan-400 font-mono font-semibold">Daily Comparisons</h2>
-            <span className="text-xs text-cyan-600 font-mono">Last 7 Days</span>
-          </div>
-          
-          <div className="h-48 flex items-end gap-2">
-            {stats.comparisons.byDay.map((count: number, i: number) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-cyan-500/60 to-cyan-400/90 rounded-t transition-all hover:from-orange-500/60 hover:to-orange-400/90 relative group"
-                  style={{ height: `${(count / 60) * 100}%` }}
-                >
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs text-cyan-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                    {count}
-                  </div>
-                </div>
-                <span className="text-xs text-cyan-700 font-mono">
-                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
-                </span>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-cyan-500/20 flex items-center justify-between text-sm font-mono">
-            <span className="text-cyan-600">Avg: {Math.round(stats.comparisons.byDay.reduce((a: number, b: number) => a + b, 0) / 7)}/day</span>
-            <span className="text-cyan-600">Peak: {Math.max(...stats.comparisons.byDay)}</span>
-          </div>
-        </div>
-
-        {/* Cost Breakdown */}
-        <div className="terminal-panel">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-cyan-400 font-mono font-semibold">Cost Analysis</h2>
-            <span className="text-xs text-cyan-600 font-mono">USD</span>
-          </div>
-          
-          <div className="h-48 flex items-end gap-2">
-            {stats.costs.daily.map((cost: number, i: number) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-orange-500/60 to-orange-400/90 rounded-t transition-all hover:from-cyan-500/60 hover:to-cyan-400/90 relative group"
-                  style={{ height: `${(cost / 0.12) * 100}%` }}
-                >
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs text-orange-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                    {formatCost(cost)}
-                  </div>
-                </div>
-                <span className="text-xs text-cyan-700 font-mono">
-                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
-                </span>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-cyan-500/20 flex items-center justify-between text-sm font-mono">
-            <span className="text-cyan-600">Total: {formatCost(stats.costs.total)}</span>
-            <span className="text-cyan-600">Proj/Month: {formatCost(stats.costs.projected)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Model Performance */}
-      <div className="terminal-panel">
-        <h2 className="text-cyan-400 font-mono font-semibold mb-6">Model Performance</h2>
-        
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* GPT-4o Mini */}
-          <div className="p-4 rounded border border-cyan-500/20 bg-cyan-500/5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-cyan-400 font-mono font-semibold">GPT-4o Mini</h3>
-              <span className="text-xs text-cyan-600 font-mono">by OpenAI</span>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-cyan-600">Win Rate</span>
-                <span className="text-lg font-bold text-cyan-400 font-mono">
-                  {Math.round((stats.models.gpt4o.wins / (stats.models.gpt4o.wins + stats.models.gpt4o.losses)) * 100)}%
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-cyan-900/30 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-cyan-400 transition-all"
-                  style={{ width: `${(stats.models.gpt4o.wins / (stats.models.gpt4o.wins + stats.models.gpt4o.losses)) * 100}%` }}
-                />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-cyan-500/20 text-center">
-                <div>
-                  <p className="text-xl font-bold text-green-400 font-mono">{stats.models.gpt4o.wins}</p>
-                  <p className="text-xs text-cyan-700">Wins</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-red-400 font-mono">{stats.models.gpt4o.losses}</p>
-                  <p className="text-xs text-cyan-700">Losses</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-yellow-400 font-mono">{stats.models.gpt4o.ties}</p>
-                  <p className="text-xs text-cyan-700">Ties</p>
-                </div>
-              </div>
-              
-              <div className="pt-3 border-t border-cyan-500/20">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-cyan-600">Total Cost</span>
-                  <span className="text-cyan-400 font-mono">{formatCost(stats.models.gpt4o.cost)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Claude 3.5 Haiku */}
-          <div className="p-4 rounded border border-orange-500/20 bg-orange-500/5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-orange-400 font-mono font-semibold">Claude 3.5 Haiku</h3>
-              <span className="text-xs text-orange-600 font-mono">by Anthropic</span>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-orange-600">Win Rate</span>
-                <span className="text-lg font-bold text-orange-400 font-mono">
-                  {Math.round((stats.models.claude.wins / (stats.models.claude.wins + stats.models.claude.losses)) * 100)}%
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-orange-900/30 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-orange-400 transition-all"
-                  style={{ width: `${(stats.models.claude.wins / (stats.models.claude.wins + stats.models.claude.losses)) * 100}%` }}
-                />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-orange-500/20 text-center">
-                <div>
-                  <p className="text-xl font-bold text-green-400 font-mono">{stats.models.claude.wins}</p>
-                  <p className="text-xs text-orange-700">Wins</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-red-400 font-mono">{stats.models.claude.losses}</p>
-                  <p className="text-xs text-orange-700">Losses</p>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-yellow-400 font-mono">{stats.models.claude.ties}</p>
-                  <p className="text-xs text-orange-700">Ties</p>
-                </div>
-              </div>
-              
-              <div className="pt-3 border-t border-orange-500/20">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-orange-600">Total Cost</span>
-                  <span className="text-orange-400 font-mono">{formatCost(stats.models.claude.cost)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Prompt Categories */}
-      <div className="terminal-panel">
-        <h2 className="text-cyan-400 font-mono font-semibold mb-6">Prompt Categories</h2>
-        
-        <div className="space-y-4">
-          {stats.prompts.categories.map((cat: any) => (
-            <div key={cat.name}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-cyan-300">{cat.name}</span>
-                <span className="text-sm text-cyan-500 font-mono">
-                  {cat.count} ({Math.round((cat.count / stats.comparisons.total) * 100)}%)
-                </span>
-              </div>
-              <div className="h-3 rounded-full bg-cyan-900/30 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-orange-400 transition-all"
-                  style={{ width: `${(cat.count / stats.comparisons.total) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="mt-6 pt-4 border-t border-cyan-500/20">
-          <div className="flex items-center justify-between text-sm font-mono">
-            <span className="text-cyan-600">Average Prompt Length</span>
-            <span className="text-cyan-400">{stats.prompts.avgLength} characters</span>
-          </div>
-        </div>
-      </div>
+        </section>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            No model data yet. Run arena sessions and vote on comparisons to see model performance.
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
-// Metric Card Component
-function MetricCard({
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-2xl font-black">{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ModelCard({
   label,
-  value,
-  change,
-  positive,
+  wins,
+  losses,
+  ties,
+  winRate,
+  totalVotes,
 }: {
   label: string;
-  value: string;
-  change: string;
-  positive: boolean;
+  wins: number;
+  losses: number;
+  ties: number;
+  winRate: number;
+  totalVotes: number;
 }) {
   return (
-    <div className="terminal-panel">
-      <p className="text-xs text-cyan-600 font-mono mb-1">{label}</p>
-      <p className="text-2xl font-bold text-cyan-400 font-mono mb-2">{value}</p>
-      <div className="flex items-center gap-2">
-        <span className={`text-xs font-mono ${positive ? 'text-green-400' : 'text-red-400'}`}>
-          {positive ? '↑' : '↓'} {change}
-        </span>
-        <span className="text-xs text-cyan-700">vs last period</span>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{label}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span>Win rate</span>
+          <span className="font-black">{winRate}%</span>
+        </div>
+        <div className="h-2 bg-muted">
+          <div className="h-2 bg-primary" style={{ width: `${winRate}%` }} />
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary">Wins {wins}</Badge>
+          <Badge variant="secondary">Losses {losses}</Badge>
+          <Badge variant="secondary">Ties {ties}</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">Total votes: {totalVotes}</p>
+      </CardContent>
+    </Card>
   );
 }

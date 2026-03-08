@@ -1,13 +1,15 @@
-// ============================================
-// Leaderboard Page - Terminal Theme
-// ============================================
-
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Trophy, TrendingUp, Users, DollarSign, Loader2 } from 'lucide-react';
-import { ModelStats } from '@/types';
+import Link from 'next/link';
+import { DollarSign, Sparkles, TrendingUp, Trophy, Users } from 'lucide-react';
 import { formatCost } from '@/lib/utils';
+import { ModelStats } from '@/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StatsData {
   success: boolean;
@@ -33,14 +35,14 @@ export default function LeaderboardPage() {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/stats');
-      const data = await response.json();
-      
-      if (data.success) {
-        setData(data);
+      const responseData = (await response.json()) as StatsData & { error?: string };
+
+      if (responseData.success) {
+        setData(responseData);
       } else {
-        setError(data.error || 'Failed to fetch stats');
+        setError(responseData.error || 'Failed to fetch stats');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to the server');
     } finally {
       setLoading(false);
@@ -50,37 +52,49 @@ export default function LeaderboardPage() {
   const getDisplayName = (modelName: string) => {
     if (modelName === 'gpt-4o-mini') return 'GPT-4o Mini';
     if (modelName === 'claude-3-5-haiku') return 'Claude 3.5 Haiku';
+    if (modelName === 'gemini-2.0-flash') return 'Gemini 2.0 Flash';
     return modelName;
   };
 
-  const getModelColor = (modelName: string) => {
-    if (modelName === 'gpt-4o-mini') return 'cyan';
-    if (modelName === 'claude-3-5-haiku') return 'orange';
-    return 'gray';
+  const getProviderLabel = (modelName: string) => {
+    if (modelName === 'gpt-4o-mini') return 'OpenAI';
+    if (modelName === 'claude-3-5-haiku') return 'Anthropic';
+    if (modelName === 'gemini-2.0-flash') return 'Google';
+    return '';
+  };
+
+  const getProviderVariant = (modelName: string): 'openai' | 'anthropic' | 'google' | 'default' => {
+    if (modelName === 'gpt-4o-mini') return 'openai';
+    if (modelName === 'claude-3-5-haiku') return 'anthropic';
+    if (modelName === 'gemini-2.0-flash') return 'google';
+    return 'default';
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-cyan-400 font-mono animate-pulse">LOADING_LEADERBOARD_DATA...</div>
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-1/3" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="h-28 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-56 w-full" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="terminal-panel border-red-500/30 text-red-400 text-center p-6 font-mono">
-        [ERROR] {error}
-      </div>
+      <Alert variant="destructive">
+        <AlertTitle>Failed to load leaderboard</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 
   if (!data) {
-    return (
-      <div className="text-center text-cyan-600 font-mono">
-        NO_DATA_AVAILABLE
-      </div>
-    );
+    return <p className="text-sm text-muted-foreground">No data available.</p>;
   }
 
   const { stats, summary } = data;
@@ -88,189 +102,150 @@ export default function LeaderboardPage() {
   const leader = sortedStats[0];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-400 font-mono">
-          <Trophy className="w-3 h-3" />
-          LIVE_RANKINGS
-        </div>
-        <h1 className="text-3xl font-bold text-cyan-400 font-mono glow-cyan">
-          &gt; Leaderboard
-        </h1>
-        <p className="text-cyan-700 font-mono text-sm">
-          Aggregate voting results across all comparisons
+    <div className="space-y-6">
+      <header className="space-y-2">
+        <Badge variant="secondary" className="inline-flex items-center gap-1">
+          <Trophy className="h-3.5 w-3.5" />
+          Live Rankings
+        </Badge>
+        <h1 className="font-serif text-4xl font-black tracking-tight uppercase border-l-4 border-primary pl-6">Model Leaderboard</h1>
+        <p className="max-w-xl text-sm text-muted-foreground">
+          Community voting outcomes from blind comparisons.
         </p>
-      </div>
+      </header>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          icon={<Users className="w-5 h-5" />}
-          label="TOTAL_COMPARISONS"
-          value={summary.totalComparisons.toLocaleString()}
-        />
-        <SummaryCard
-          icon={<DollarSign className="w-5 h-5" />}
-          label="TODAY_COST"
-          value={formatCost(summary.totalCost)}
-        />
-        <SummaryCard
-          icon={<Trophy className="w-5 h-5" />}
-          label="CURRENT_LEADER"
-          value={leader ? getDisplayName(leader.model_name) : 'N/A'}
-        />
-        <SummaryCard
-          icon={<TrendingUp className="w-5 h-5" />}
-          label="BUDGET_USED"
-          value={`${summary.budgetPercentUsed.toFixed(0)}%`}
-        />
-      </div>
-
-      {/* Budget Progress */}
-      <div className="terminal-panel">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-cyan-400 font-mono font-semibold flex items-center gap-2">
-            <span>$</span>
-            <span>Daily Budget Usage</span>
-          </h2>
-          <span className="text-sm text-cyan-600 font-mono">
-            {formatCost(summary.totalCost)} / {formatCost(summary.budgetLimit)}
-          </span>
-        </div>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-cyan-900/30">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-orange-400 transition-all duration-500"
-            style={{ width: `${Math.min(summary.budgetPercentUsed, 100)}%` }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-cyan-700 font-mono">
-          {summary.budgetRemaining > 0
-            ? `${formatCost(summary.budgetRemaining)} remaining today`
-            : '[WARNING] Daily budget exhausted'}
-        </p>
-      </div>
-
-      {/* Model Rankings */}
-      <div className="space-y-4">
-        <h2 className="text-cyan-400 font-mono font-semibold flex items-center gap-2">
-          <span>◈</span>
-          <span>Model Rankings</span>
-        </h2>
-        
-        {sortedStats.map((stat, index) => {
-          const color = getModelColor(stat.model_name);
-          const isCyan = color === 'cyan';
-          const isLeader = index === 0 && stat.total_votes > 0;
-          
-          return (
-            <div
-              key={stat.model_name}
-              className={`terminal-panel ${isLeader ? 'border-yellow-500/50' : ''}`}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                {/* Left: Model Info */}
-                <div className="flex items-center gap-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded border ${
-                    isLeader ? 'border-yellow-500/50 bg-yellow-500/10' : 
-                    isCyan ? 'border-cyan-500/30 bg-cyan-500/10' : 'border-orange-500/30 bg-orange-500/10'
-                  }`}>
-                    {isLeader ? (
-                      <Trophy className="h-6 w-6 text-yellow-500" />
-                    ) : (
-                      <span className={`text-lg font-bold ${isCyan ? 'text-cyan-400' : 'text-orange-400'}`}>
-                        #{index + 1}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className={`text-lg font-semibold font-mono ${isCyan ? 'text-cyan-400' : 'text-orange-400'}`}>
-                      {getDisplayName(stat.model_name)}
-                    </h3>
-                    <p className="text-sm text-cyan-700 font-mono">
-                      {stat.total_votes} votes
-                    </p>
-                  </div>
-                </div>
-
-                {/* Center: Win/Loss/Tie */}
-                <div className="grid grid-cols-3 gap-6 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-green-400 font-mono">{stat.wins}</p>
-                    <p className="text-xs text-cyan-700 font-mono">WINS</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-red-400 font-mono">{stat.losses}</p>
-                    <p className="text-xs text-cyan-700 font-mono">LOSSES</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-yellow-400 font-mono">{stat.ties}</p>
-                    <p className="text-xs text-cyan-700 font-mono">TIES</p>
-                  </div>
-                </div>
-
-                {/* Right: Win Rate */}
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-cyan-400 font-mono">
-                    {stat.total_votes > 0 ? `${stat.win_rate}%` : 'N/A'}
-                  </p>
-                  <p className="text-sm text-cyan-700 font-mono">WIN_RATE</p>
-                </div>
-              </div>
-
-              {/* Win Rate Bar */}
-              {stat.total_votes > 0 && (
-                <div className="mt-4">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-cyan-900/30">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        isCyan ? 'bg-cyan-400' : 'bg-orange-400'
-                      }`}
-                      style={{ width: `${stat.win_rate}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {sortedStats.length === 0 && (
-          <div className="terminal-panel p-12 text-center">
-            <Trophy className="mx-auto mb-4 h-12 w-12 text-cyan-800" />
-            <p className="text-cyan-600 font-mono">
-              No votes yet. Be the first to compare!
-            </p>
-            <a
-              href="/"
-              className="btn-cyber inline-flex mt-4"
-            >
-              Start Comparing
-            </a>
+      {summary.totalComparisons > 0 && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryCard
+              icon={<Users className="h-4 w-4" />}
+              label="Total Comparisons"
+              value={summary.totalComparisons.toLocaleString()}
+              trend="All time"
+            />
+            <SummaryCard
+              icon={<DollarSign className="h-4 w-4" />}
+              label="Today's Cost"
+              value={formatCost(summary.totalCost, 2)}
+              trend={`${formatCost(summary.budgetRemaining, 2)} remaining`}
+            />
+            <SummaryCard
+              icon={<Trophy className="h-4 w-4" />}
+              label="Current Leader"
+              value={leader ? getDisplayName(leader.model_name) : 'N/A'}
+              trend={leader ? `${leader.win_rate}% win rate` : 'No votes yet'}
+            />
+            <SummaryCard
+              icon={<TrendingUp className="h-4 w-4" />}
+              label="Budget Used"
+              value={`${summary.budgetPercentUsed.toFixed(0)}%`}
+              trend={`${formatCost(summary.budgetRemaining, 2)} left`}
+            />
           </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Daily Budget Usage</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="h-2 bg-muted">
+                <div className="h-2 bg-primary" style={{ width: `${Math.min(summary.budgetPercentUsed, 100)}%` }} />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {formatCost(summary.totalCost, 2)} / {formatCost(summary.budgetLimit, 2)}
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      <section className="space-y-3">
+        {sortedStats.length > 0 && (
+          <h2 className="font-serif text-xl font-black uppercase tracking-tight">Model Performance</h2>
         )}
-      </div>
+
+        {sortedStats.length === 0 ? (
+          <Card>
+            <CardContent className="space-y-4 py-12 text-center">
+              <Sparkles className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No votes yet. Be the first to compare.</p>
+              <Button asChild>
+                <Link href="/">Start Comparing</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          sortedStats.map((stat, index) => (
+            <Card key={stat.model_name}>
+              <CardContent className="space-y-4 pt-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-center gap-3">
+                    <Badge>{index === 0 ? 'Leader' : `#${index + 1}`}</Badge>
+                    <div>
+                      <p className="font-semibold">{getDisplayName(stat.model_name)}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getProviderVariant(stat.model_name) as any}>{getProviderLabel(stat.model_name)}</Badge>
+                        <p className="text-xs text-muted-foreground">{stat.total_votes.toLocaleString()} votes</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center lg:w-[300px]">
+                    <StatPill label="Wins" value={stat.wins} />
+                    <StatPill label="Losses" value={stat.losses} />
+                    <StatPill label="Ties" value={stat.ties} />
+                  </div>
+
+                  <div className="text-left lg:text-right">
+                    <p className="text-2xl font-black">{stat.total_votes > 0 ? `${stat.win_rate}%` : 'N/A'}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Win Rate</p>
+                  </div>
+                </div>
+
+                {stat.total_votes > 0 ? (
+                  <div className="h-2 bg-muted">
+                    <div className="h-2 bg-primary" style={{ width: `${stat.win_rate}%` }} />
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </section>
     </div>
   );
 }
 
-// Summary Card Component
-function SummaryCard({ 
-  icon, 
-  label, 
-  value 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
+function SummaryCard({
+  icon,
+  label,
+  value,
+  trend,
+}: {
+  icon: React.ReactNode;
+  label: string;
   value: string;
+  trend: string;
 }) {
   return (
-    <div className="terminal-panel">
-      <div className="mb-2 flex items-center gap-2 text-cyan-600">
-        {icon}
-        <span className="text-xs font-mono">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-cyan-400 font-mono">{value}</p>
+    <Card>
+      <CardContent className="space-y-2 pt-6">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          {icon}
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{label}</span>
+        </div>
+        <p className="text-2xl font-black">{value}</p>
+        <p className="text-xs text-muted-foreground">{trend}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border-2 border-slate-900 dark:border-slate-800 bg-muted/40 p-2">
+      <p className="text-lg font-black">{value.toLocaleString()}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }

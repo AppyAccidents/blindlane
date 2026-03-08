@@ -1,93 +1,65 @@
-// ============================================
-// API Route: Record Vote
-// POST /api/comparison/vote
-// 
-// Records which model the user preferred
-// Then reveals which model was which
-// ============================================
-
 import { NextRequest, NextResponse } from 'next/server';
-import { recordVote, getComparison } from '@/lib/supabase';
-import { VoteRequest, VoteResponse, VoteResult } from '@/types';
+import { getArenaRun, updateArenaRun } from '@/lib/supabase';
+import { applyVoteAndRank } from '@/lib/converge';
+import { isNonEmptyString, isPairVoteChoice } from '@/lib/validation';
+import { VoteRequest, VoteResponse } from '@/types';
 
-/**
- * Main handler for POST requests
- * Called when user clicks "A is better", "B is better", or "Tie"
- */
 export async function POST(request: NextRequest) {
   try {
-    // ==========================================
-    // STEP 1: Parse the request
-    // ==========================================
-    const body: VoteRequest = await request.json();
-    const { comparisonId, vote } = body;
-    
-    // Validate input
-    if (!comparisonId) {
-      return NextResponse.json(
-        { success: false, error: 'Missing comparison ID' },
-        { status: 400 }
-      );
+    const body = (await request.json()) as VoteRequest;
+
+    if (!isNonEmptyString(body.runId)) {
+      return NextResponse.json({ success: false, error: 'Missing runId' }, { status: 400 });
     }
-    
-    if (!vote || !['A', 'B', 'TIE'].includes(vote)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid vote. Must be A, B, or TIE' },
-        { status: 400 }
-      );
+
+    if (!isNonEmptyString(body.pairId)) {
+      return NextResponse.json({ success: false, error: 'Missing pairId' }, { status: 400 });
     }
-    
-    // ==========================================
-    // STEP 2: Get the comparison (to check if already voted)
-    // ==========================================
-    const existingComparison = await getComparison(comparisonId);
-    
-    if (!existingComparison) {
-      return NextResponse.json(
-        { success: false, error: 'Comparison not found' },
-        { status: 404 }
-      );
+
+    if (!isPairVoteChoice(body.vote)) {
+      return NextResponse.json({ success: false, error: 'Invalid vote choice' }, { status: 400 });
     }
-    
-    // Check if already voted
-    if (existingComparison.winner) {
-      // Return the comparison anyway (idempotent - same result if called again)
-      return NextResponse.json({
-        success: true,
-        comparison: existingComparison,
-        message: 'Already voted',
-      });
+
+    const arena = await getArenaRun(body.runId);
+    if (!arena) {
+      return NextResponse.json({ success: false, error: 'Run not found' }, { status: 404 });
     }
-    
-    // ==========================================
-    // STEP 3: Record the vote
-    // ==========================================
-    const updatedComparison = await recordVote(
-      comparisonId,
-      vote as VoteResult
-    );
-    
-    if (!updatedComparison) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to record vote' },
-        { status: 500 }
-      );
+
+    if (arena.run.phase === 'converged') {
+      return NextResponse.json({ success: false, error: 'Run already converged' }, { status: 409 });
     }
-    
-    // ==========================================
-    // STEP 4: Return the full comparison
-    // NOW we reveal which model was A and which was B!
-    // ==========================================
-    return NextResponse.json({
+
+    const alreadyVoted = arena.run.votes.some((v) => v.pairId === body.pairId);
+    if (alreadyVoted) {
+      return NextResponse.json({ success: false, error: 'Already voted on this pair' }, { status: 409 });
+    }
+
+    const { updatedVotes, scores } = applyVoteAndRank(arena.run, body.pairId, body.vote);
+    const updatedRun = {
+      ...arena.run,
+      phase: 'compare' as const,
+      votes: updatedVotes,
+    };
+
+    const persisted = await updateArenaRun(body.runId, updatedRun);
+    if (!persisted) {
+      return NextResponse.json({ success: false, error: 'Failed to persist vote' }, { status: 500 });
+    }
+
+    const response: VoteResponse = {
       success: true,
-      comparison: updatedComparison,
-    });
-    
+      pairId: body.pairId,
+      vote: body.vote,
+      aggregateSignals: {
+        completedVotes: updatedVotes.length,
+        totalPairs: arena.run.comparePairs.length,
+        scores,
+      },
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error in vote API:', error);
-    return NextResponse.json(
-      { success: false, error: 'Something went wrong. Please try again.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Unable to record vote' }, { status: 500 });
   }
 }

@@ -1,181 +1,170 @@
-// ============================================
-// About Page - Terminal Theme
-// ============================================
+import { CircleHelp, GitBranch, Globe, Zap } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+
+const steps = [
+  {
+    step: '01',
+    title: 'Enter Prompt',
+    desc: 'Ask anything: writing, coding, analysis, or ideation.',
+  },
+  {
+    step: '02',
+    title: 'Random Assignment',
+    desc: 'Models are assigned to anonymous draft labels before evaluation.',
+  },
+  {
+    step: '03',
+    title: 'Compare Outputs',
+    desc: 'Review content quality side-by-side without model brand bias.',
+  },
+  {
+    step: '04',
+    title: 'Vote & Reveal',
+    desc: 'After converge, model, variant, cost, and latency are revealed.',
+  },
+];
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-400 font-mono">
-          <span>?</span>
-          <span>ABOUT_SYSTEM</span>
-        </div>
-        <h1 className="text-3xl font-bold text-cyan-400 font-mono">
-          &gt; About BlindLane
-        </h1>
-        <p className="text-cyan-700 font-mono text-sm">
-          Fair AI model comparison through blind testing
+    <div className="mx-auto max-w-4xl space-y-6 pb-6">
+      <header className="space-y-3">
+        <Badge variant="secondary" className="inline-flex items-center gap-1">
+          <CircleHelp className="h-3.5 w-3.5" />
+          About BlindLane
+        </Badge>
+        <h1 className="font-serif text-4xl font-black tracking-tight uppercase border-l-4 border-primary pl-6">Blind AI Comparison, Editor-First</h1>
+        <p className="text-sm text-muted-foreground">
+          BlindLane removes brand bias from model evaluation by hiding identities until selection.
         </p>
+      </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif uppercase">What is BlindLane?</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            BlindLane is an editor-first workspace where one prompt generates 6 anonymous drafts from 3 providers
+            (OpenAI, Anthropic, Google). You compare quality, not model names, then converge on the best draft.
+          </p>
+          <p>
+            After convergence, identities and run telemetry are revealed so your decision stays unbiased.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Remove Bias</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Blind evaluation helps teams judge output quality without preconceived model preferences.
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Find What Wins</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Different models and variants win in different contexts. Blind comparisons expose that quickly.
+          </CardContent>
+        </Card>
       </div>
 
-      {/* What is BlindLane? */}
-      <section className="terminal-panel">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-cyan-500">◈</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">What is BlindLane?</h2>
-        </div>
-        
-        <div className="space-y-4 text-cyan-300 text-sm leading-relaxed">
-          <p>
-            BlindLane is a blind comparison tool for AI language models. Like the famous 
-            Pepsi Challenge, we hide which model is which so you can judge responses 
-            purely on quality—without brand bias.
-          </p>
-          <p>
-            You enter a prompt, two AI models respond anonymously, and you vote for the 
-            better one. Only after voting do we reveal which model was which.
-          </p>
-        </div>
-      </section>
-
-      {/* Why Blind Testing? */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="terminal-panel">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl text-cyan-500">◉</span>
-            <h3 className="text-cyan-400 font-mono font-semibold">Remove Bias</h3>
-          </div>
-          <p className="text-sm text-cyan-700">
-            People have strong opinions about AI brands. Blind testing ensures 
-            you're judging the response, not the logo.
-          </p>
-        </div>
-        
-        <div className="terminal-panel">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl text-orange-500">◊</span>
-            <h3 className="text-orange-400 font-mono font-semibold">Find the Best</h3>
-          </div>
-          <p className="text-sm text-cyan-700">
-            Different models excel at different tasks. Blind testing helps you 
-            discover which works best for your needs.
-          </p>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="terminal-panel">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-cyan-500">⚙</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">How It Works</h2>
-        </div>
-        
-        <div className="space-y-4">
-          {[
-            { step: '01', title: 'Enter Prompt', desc: 'Ask anything—creative writing, coding help, analysis, or casual chat.' },
-            { step: '02', title: 'Random Assignment', desc: 'Models randomly assigned to A or B. Identity encrypted until vote.' },
-            { step: '03', title: 'Compare Outputs', desc: 'Review both responses side-by-side. Evaluate quality objectively.' },
-            { step: '04', title: 'Vote & Reveal', desc: 'Cast your vote, then decrypt to see which model you chose.' },
-          ].map((item) => (
-            <div key={item.step} className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded border border-cyan-500/30 bg-cyan-500/10 flex items-center justify-center">
-                <span className="text-cyan-400 font-mono text-sm font-bold">{item.step}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif uppercase">How It Works</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {steps.map((item, index) => (
+            <div key={item.step}>
+              <div className="flex gap-3">
+                <Badge className="h-7 min-w-7 justify-center">{item.step}</Badge>
+                <div>
+                  <p className="text-sm font-medium">{item.title}</p>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-cyan-300 font-mono font-semibold text-sm">{item.title}</h3>
-                <p className="text-cyan-700 text-sm mt-1">{item.desc}</p>
-              </div>
+              {index < steps.length - 1 ? <Separator className="mt-4" /> : null}
             </div>
           ))}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      {/* Current Models */}
-      <section className="terminal-panel">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-cyan-500">◇</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">Active Models</h2>
-        </div>
-        
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="p-4 rounded border border-cyan-500/20 bg-cyan-500/5">
-            <h3 className="text-cyan-400 font-mono font-semibold mb-1">GPT-4o Mini</h3>
-            <p className="text-xs text-cyan-700 font-mono mb-3">by OpenAI</p>
-            <p className="text-sm text-cyan-300">
-              Fast, affordable model optimized for everyday tasks. Good balance 
-              of speed and quality.
-            </p>
-          </div>
-          
-          <div className="p-4 rounded border border-orange-500/20 bg-orange-500/5">
-            <h3 className="text-orange-400 font-mono font-semibold mb-1">Claude 3.5 Haiku</h3>
-            <p className="text-xs text-orange-700 font-mono mb-3">by Anthropic</p>
-            <p className="text-sm text-cyan-300">
-              Anthropic's fastest model, known for nuanced responses and strong 
-              reasoning abilities.
-            </p>
-          </div>
-        </div>
-      </section>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Active Models</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div>
+              <p className="font-medium">GPT-4o Mini</p>
+              <p className="text-muted-foreground">OpenAI fast model for efficient generation.</p>
+            </div>
+            <Separator />
+            <div>
+              <p className="font-medium">Claude 3.5 Haiku</p>
+              <p className="text-muted-foreground">Anthropic fast model for concise reasoning tasks.</p>
+            </div>
+            <Separator />
+            <div>
+              <p className="font-medium">Gemini 2.0 Flash</p>
+              <p className="text-muted-foreground">Google fast model for versatile content generation.</p>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Pricing */}
-      <section className="terminal-panel">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-green-500">$</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">Pricing Transparency</h2>
-        </div>
-        
-        <p className="text-sm text-cyan-700 mb-4">
-          We show you exactly how much each comparison costs. No hidden fees, no markup.
-        </p>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm font-mono">
-            <thead>
-              <tr className="border-b border-cyan-500/20">
-                <th className="pb-3 text-left text-cyan-400">Model</th>
-                <th className="pb-3 text-right text-cyan-400">Input (per 1M)</th>
-                <th className="pb-3 text-right text-cyan-400">Output (per 1M)</th>
-              </tr>
-            </thead>
-            <tbody className="text-cyan-300">
-              <tr>
-                <td className="py-3">GPT-4o Mini</td>
-                <td className="py-3 text-right text-cyan-500">$0.15</td>
-                <td className="py-3 text-right text-cyan-500">$0.60</td>
-              </tr>
-              <tr>
-                <td className="py-3">Claude 3.5 Haiku</td>
-                <td className="py-3 text-right text-cyan-500">$0.25</td>
-                <td className="py-3 text-right text-cyan-500">$1.25</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Pricing Transparency</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span>GPT-4o Mini</span>
+              <span className="text-muted-foreground">$0.15 in / $0.60 out per 1M</span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span>Claude 3.5 Haiku</span>
+              <span className="text-muted-foreground">$0.25 in / $1.25 out per 1M</span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span>Gemini 2.0 Flash</span>
+              <span className="text-muted-foreground">$0.10 in / $0.40 out per 1M</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Open Source */}
-      <section className="terminal-panel border-cyan-500/30">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-cyan-500">⚡</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">Open Source</h2>
-        </div>
-        
-        <p className="text-sm text-cyan-300 mb-4">
-          BlindLane is open source. Inspect the code, suggest improvements, or run your own instance.
-        </p>
-        
-        <a
-          href="https://github.com/AppyAccidents/blindlane"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-cyber inline-flex"
-        >
-          <span>View on GitHub</span>
-          <span className="ml-2">→</span>
-        </a>
-      </section>
+      <Alert>
+        <Globe className="h-4 w-4" />
+        <AlertTitle>Open Source</AlertTitle>
+        <AlertDescription>
+          Inspect the codebase, run it locally, or contribute improvements.
+        </AlertDescription>
+      </Alert>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button asChild>
+          <a href="https://github.com/AppyAccidents/blindlane" target="_blank" rel="noopener noreferrer">
+            <GitBranch className="mr-2 h-4 w-4" />
+            View on GitHub
+          </a>
+        </Button>
+        <Button asChild variant="outline">
+          <a href="/">
+            <Zap className="mr-2 h-4 w-4" />
+            Start Comparing
+          </a>
+        </Button>
+      </div>
+
     </div>
   );
 }

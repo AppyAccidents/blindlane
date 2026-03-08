@@ -1,11 +1,24 @@
-// ============================================
-// Admin Settings Page
-// Configure rate limits, budgets, and system settings
-// ============================================
-
 'use client';
 
 import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState({
@@ -21,304 +34,197 @@ export default function AdminSettings() {
 
   const [saved, setSaved] = useState(false);
 
+  const updateSetting = <K extends keyof typeof settings>(key: K, value: (typeof settings)[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+  };
+
   const handleSave = () => {
-    // TODO: Save to API
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-    setSaved(false);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-cyan-400 font-mono mb-1">
-          &gt; Settings
-        </h1>
-        <p className="text-cyan-700 text-sm font-mono">
-          Configure system parameters and limits
-        </p>
+      <header className="border-l-4 border-primary pl-6">
+        <h1 className="font-serif text-2xl font-black tracking-tight uppercase">Settings</h1>
+        <p className="font-sans text-sm text-muted-foreground">Configure budget, limits, and operational flags.</p>
+      </header>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Cost Controls</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <SettingSlider
+              label="Daily Budget Limit"
+              description="Maximum daily spending on model calls"
+              value={settings.dailyBudgetLimit}
+              min={1}
+              max={100}
+              step={1}
+              unit="USD"
+              onChange={(value) => updateSetting('dailyBudgetLimit', value)}
+            />
+            <SettingSlider
+              label="Max Response Tokens"
+              description="Maximum tokens generated per response"
+              value={settings.maxResponseTokens}
+              min={100}
+              max={4000}
+              step={100}
+              unit="tokens"
+              onChange={(value) => updateSetting('maxResponseTokens', value)}
+            />
+            <Badge variant="secondary">Projected monthly cap: ${(settings.dailyBudgetLimit * 30).toFixed(0)}</Badge>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rate and Prompt Limits</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <SettingSlider
+              label="Comparisons Per IP / Day"
+              description="Daily limit for each hashed IP"
+              value={settings.rateLimitPerIP}
+              min={1}
+              max={100}
+              step={1}
+              unit="runs"
+              onChange={(value) => updateSetting('rateLimitPerIP', value)}
+            />
+            <SettingSlider
+              label="Max Prompt Length"
+              description="Maximum prompt character count"
+              value={settings.maxPromptLength}
+              min={100}
+              max={10000}
+              step={100}
+              unit="chars"
+              onChange={(value) => updateSetting('maxPromptLength', value)}
+            />
+            <SettingSlider
+              label="API Timeout"
+              description="Max wait time per generation request"
+              value={settings.apiTimeout}
+              min={5}
+              max={60}
+              step={5}
+              unit="sec"
+              onChange={(value) => updateSetting('apiTimeout', value)}
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Cost Control Settings */}
-      <div className="terminal-panel">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-orange-500">$</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">Cost Control</h2>
-        </div>
-
-        <div className="space-y-6">
-          {/* Daily Budget */}
-          <SettingRow
-            label="Daily Budget Limit"
-            description="Maximum daily spending on API calls (hard stop)"
-            value={settings.dailyBudgetLimit}
-            onChange={(v) => updateSetting('dailyBudgetLimit', v)}
-            unit="USD"
-            min={1}
-            max={100}
-            step={1}
-          />
-
-          {/* Max Response Tokens */}
-          <SettingRow
-            label="Max Response Tokens"
-            description="Maximum tokens per model response (controls output length)"
-            value={settings.maxResponseTokens}
-            onChange={(v) => updateSetting('maxResponseTokens', v)}
-            unit="tokens"
-            min={100}
-            max={4000}
-            step={100}
-          />
-
-          {/* Cost Projection */}
-          <div className="p-4 rounded border border-cyan-500/20 bg-cyan-500/5">
-            <div className="flex items-center justify-between text-sm font-mono">
-              <span className="text-cyan-600">Projected Monthly Cost</span>
-              <span className="text-cyan-400">${(settings.dailyBudgetLimit * 30).toFixed(0)}</span>
-            </div>
-            <p className="text-xs text-cyan-700 mt-1">
-              Based on daily limit × 30 days. Actual may vary.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Rate Limiting Settings */}
-      <div className="terminal-panel">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-cyan-500">◈</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">Rate Limiting</h2>
-        </div>
-
-        <div className="space-y-6">
-          {/* Rate Limit Per IP */}
-          <SettingRow
-            label="Comparisons Per IP Per Day"
-            description="Maximum comparisons allowed per IP address per 24 hours"
-            value={settings.rateLimitPerIP}
-            onChange={(v) => updateSetting('rateLimitPerIP', v)}
-            unit="comparisons"
-            min={1}
-            max={100}
-            step={1}
-          />
-
-          {/* Max Prompt Length */}
-          <SettingRow
-            label="Max Prompt Length"
-            description="Maximum characters allowed in user prompts"
-            value={settings.maxPromptLength}
-            onChange={(v) => updateSetting('maxPromptLength', v)}
-            unit="chars"
-            min={100}
-            max={10000}
-            step={100}
-          />
-
-          {/* API Timeout */}
-          <SettingRow
-            label="API Timeout"
-            description="Maximum seconds to wait for model responses"
-            value={settings.apiTimeout}
-            onChange={(v) => updateSetting('apiTimeout', v)}
-            unit="seconds"
-            min={5}
-            max={60}
-            step={5}
-          />
-        </div>
-      </div>
-
-      {/* Feature Toggles */}
-      <div className="terminal-panel">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-cyan-500">⚙</span>
-          <h2 className="text-cyan-400 font-mono font-semibold">Feature Toggles</h2>
-        </div>
-
-        <div className="space-y-4">
-          <ToggleRow
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Feature Flags</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <SettingSwitch
             label="Enable Streaming"
-            description="Show responses character-by-character animation"
-            enabled={settings.enableStreaming}
-            onChange={(v) => updateSetting('enableStreaming', v)}
+            description="Stream model responses in the UI"
+            checked={settings.enableStreaming}
+            onCheckedChange={(checked) => updateSetting('enableStreaming', checked)}
           />
-
-          <ToggleRow
+          <SettingSwitch
             label="Enable Voting"
-            description="Allow users to vote on comparisons"
-            enabled={settings.enableVoting}
-            onChange={(v) => updateSetting('enableVoting', v)}
+            description="Allow BETTER/TIE/SKIP voting on pairs"
+            checked={settings.enableVoting}
+            onCheckedChange={(checked) => updateSetting('enableVoting', checked)}
           />
-
-          <ToggleRow
+          <SettingSwitch
             label="Maintenance Mode"
-            description="Show maintenance page to all visitors"
-            enabled={settings.maintenanceMode}
-            onChange={(v) => updateSetting('maintenanceMode', v)}
-            danger
+            description="Temporarily disable user-facing generation"
+            checked={settings.maintenanceMode}
+            onCheckedChange={(checked) => updateSetting('maintenanceMode', checked)}
           />
-        </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Environment Keys</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <EnvRow label="OPENAI_API_KEY" configured />
+          <EnvRow label="ANTHROPIC_API_KEY" configured />
+          <EnvRow label="GOOGLE_AI_API_KEY" configured />
+          <EnvRow label="SUPABASE_SERVICE_ROLE_KEY" configured />
+        </CardContent>
+      </Card>
+
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Danger Zone</AlertTitle>
+        <AlertDescription>Actions below are irreversible in production environments.</AlertDescription>
+      </Alert>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <DangerAction title="Clear All Comparisons" description="Delete all run and vote records." />
+        <DangerAction title="Reset Rate Limits" description="Reset all per-IP counters and budgets." />
+        <DangerAction title="Clear Cache" description="Invalidate cached stats and API responses." />
       </div>
 
-      {/* API Keys */}
-      <div className="terminal-panel border-orange-500/30">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-orange-500">🔑</span>
-          <h2 className="text-orange-400 font-mono font-semibold">API Keys</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="p-4 rounded border border-cyan-500/20 bg-black/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-cyan-400 font-mono">OpenAI API Key</span>
-              <span className="text-xs text-green-400 font-mono">● CONFIGURED</span>
-            </div>
-            <p className="text-xs text-cyan-700">
-              Set via OPENAI_API_KEY environment variable
-            </p>
-          </div>
-
-          <div className="p-4 rounded border border-cyan-500/20 bg-black/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-cyan-400 font-mono">Anthropic API Key</span>
-              <span className="text-xs text-green-400 font-mono">● CONFIGURED</span>
-            </div>
-            <p className="text-xs text-cyan-700">
-              Set via ANTHROPIC_API_KEY environment variable
-            </p>
-          </div>
-
-          <div className="p-4 rounded border border-cyan-500/20 bg-black/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-cyan-400 font-mono">Supabase Service Key</span>
-              <span className="text-xs text-green-400 font-mono">● CONFIGURED</span>
-            </div>
-            <p className="text-xs text-cyan-700">
-              Set via SUPABASE_SERVICE_ROLE_KEY environment variable
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="terminal-panel border-red-500/30">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-red-500">⚠</span>
-          <h2 className="text-red-400 font-mono font-semibold">Danger Zone</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded border border-red-500/20 bg-red-500/5">
-            <div>
-              <p className="text-red-400 font-mono text-sm">Clear All Comparisons</p>
-              <p className="text-xs text-red-700">Permanently delete all comparison data</p>
-            </div>
-            <button className="px-4 py-2 rounded border border-red-500/50 text-red-400 hover:bg-red-500/10 font-mono text-sm transition-colors">
-              CLEAR DATA
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded border border-red-500/20 bg-red-500/5">
-            <div>
-              <p className="text-red-400 font-mono text-sm">Reset Rate Limits</p>
-              <p className="text-xs text-red-700">Clear all IP-based rate limit counters</p>
-            </div>
-            <button className="px-4 py-2 rounded border border-red-500/50 text-red-400 hover:bg-red-500/10 font-mono text-sm transition-colors">
-              RESET LIMITS
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded border border-red-500/20 bg-red-500/5">
-            <div>
-              <p className="text-red-400 font-mono text-sm">Clear Cache</p>
-              <p className="text-xs text-red-700">Invalidate all cached responses</p>
-            </div>
-            <button className="px-4 py-2 rounded border border-red-500/50 text-red-400 hover:bg-red-500/10 font-mono text-sm transition-colors">
-              CLEAR CACHE
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Save Button */}
       <div className="flex items-center justify-between">
-        <div>
-          {saved && (
-            <span className="text-green-400 font-mono text-sm flex items-center gap-2">
-              <span>✓</span>
-              <span>Settings saved successfully</span>
-            </span>
-          )}
-        </div>
-        <button
-          onClick={handleSave}
-          className="btn-cyber"
-        >
-          <span>SAVE_SETTINGS</span>
-          <span className="ml-2">→</span>
-        </button>
+        {saved ? <p className="text-sm text-primary">Settings saved.</p> : <span />}
+        <Button onClick={handleSave}>Save Settings</Button>
       </div>
     </div>
   );
 }
 
-// Setting Row Component with Slider
-function SettingRow({
+function SettingSlider({
   label,
   description,
   value,
-  onChange,
-  unit,
   min,
   max,
   step,
+  unit,
+  onChange,
 }: {
   label: string;
   description: string;
   value: number;
-  onChange: (value: number) => void;
-  unit: string;
   min: number;
   max: number;
   step: number;
+  unit: string;
+  onChange: (value: number) => void;
 }) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <label className="text-sm text-cyan-300 font-mono">{label}</label>
-          <p className="text-xs text-cyan-700">{description}</p>
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
         </div>
         <div className="flex items-center gap-2">
-          <input
+          <Input
             type="number"
             value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="w-20 px-2 py-1 rounded bg-black/50 border border-cyan-500/30 text-cyan-400 font-mono text-sm text-right"
+            onChange={(event) => onChange(Number(event.target.value))}
             min={min}
             max={max}
             step={step}
+            className="w-24"
           />
-          <span className="text-xs text-cyan-600 font-mono w-16">{unit}</span>
+          <span className="text-xs text-muted-foreground">{unit}</span>
         </div>
       </div>
-      <input
-        type="range"
+      <Slider
+        value={[value]}
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-2 rounded-full bg-cyan-900/30 appearance-none cursor-pointer accent-cyan-400"
+        onValueChange={(values: number[]) => onChange(values[0] ?? value)}
       />
-      <div className="flex justify-between text-xs text-cyan-700 font-mono mt-1">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span>{min}</span>
         <span>{max}</span>
       </div>
@@ -326,42 +232,61 @@ function SettingRow({
   );
 }
 
-// Toggle Row Component
-function ToggleRow({
+function SettingSwitch({
   label,
   description,
-  enabled,
-  onChange,
-  danger,
+  checked,
+  onCheckedChange,
 }: {
   label: string;
   description: string;
-  enabled: boolean;
-  onChange: (enabled: boolean) => void;
-  danger?: boolean;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between p-4 rounded border border-cyan-500/20 bg-black/20">
+    <div className="flex items-center justify-between border-2 border-slate-900 dark:border-slate-800 p-3">
       <div>
-        <label className={`text-sm font-mono ${danger ? 'text-red-400' : 'text-cyan-300'}`}>
-          {label}
-        </label>
-        <p className="text-xs text-cyan-700">{description}</p>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
-      <button
-        onClick={() => onChange(!enabled)}
-        className={`relative w-14 h-7 rounded-full transition-colors ${
-          enabled 
-            ? (danger ? 'bg-red-500' : 'bg-cyan-500') 
-            : 'bg-cyan-900/30'
-        }`}
-      >
-        <span
-          className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
-            enabled ? 'left-8' : 'left-1'
-          }`}
-        />
-      </button>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
     </div>
+  );
+}
+
+function EnvRow({ label, configured }: { label: string; configured: boolean }) {
+  return (
+    <div className="flex items-center justify-between border-2 border-slate-900 dark:border-slate-800 p-3 text-sm">
+      <span className="font-mono">{label}</span>
+      <Badge variant={configured ? 'secondary' : 'destructive'}>{configured ? 'Configured' : 'Missing'}</Badge>
+    </div>
+  );
+}
+
+function DangerAction({ title, description }: { title: string; description: string }) {
+  return (
+    <Card className="border-2 border-destructive">
+      <CardContent className="space-y-3 pt-6">
+        <div>
+          <p className="text-sm font-medium text-destructive">{title}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">Run Action</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm action</AlertDialogTitle>
+              <AlertDialogDescription>This operation cannot be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex justify-end gap-2">
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction>Confirm</AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
   );
 }

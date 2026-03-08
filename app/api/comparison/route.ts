@@ -1,276 +1,129 @@
-// ============================================
-// API Route: Create Comparison
-// POST /api/comparison
-// 
-// This is the heart of BlindLane!
-// It takes a prompt, calls both LLMs in parallel,
-// randomizes which is A/B, and saves to database
-// ============================================
-
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
-import { 
-  createComparison, 
-  checkRateLimit, 
-  incrementRateLimit,
-  getDailyCost 
-} from '@/lib/supabase';
-import { 
-  validatePrompt, 
-  randomizeModels, 
-  calculateCost,
-  getClientIp,
-  estimateTokenCount,
-} from '@/lib/utils';
-import { ModelType } from '@/types';
+import { FEATURE_FLAGS } from '@/lib/config';
+import { parsePlatformDestination } from '@/lib/validation';
+import { validatePrompt, getClientIp, hashIp } from '@/lib/utils';
+import { generateDrafts, createModelCaller } from '@/lib/generation';
+import { resolveKeys } from '@/lib/key-manager';
+import { evaluateDrafts, mergeEvaluations } from '@/lib/evaluator';
+import { evaluateAllDraftsWithAI } from '@/lib/ai-evaluator';
+import { toArenaRunPreview } from '@/lib/arena';
+import { buildArenaRunData } from '@/lib/supabase';
+import { createArenaRun, checkAndIncrementLimits } from '@/lib/supabase';
+import { acquireGenerationSlot } from '@/lib/concurrency';
+import { CreateComparisonRequest, CreateComparisonResponse } from '@/types';
 
-// Initialize API clients
-// These use your API keys from .env.local
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
-// Cost control constants
-const DAILY_BUDGET_LIMIT = parseFloat(process.env.DAILY_BUDGET_LIMIT || '10');
-const API_TIMEOUT = parseInt(process.env.API_TIMEOUT_SECONDS || '15') * 1000; // Convert to ms
-const MAX_PROMPT_LENGTH = parseInt(process.env.MAX_PROMPT_LENGTH || '1000');
-
-/**
- * Main handler for POST requests
- * This is called when user clicks "Compare"
- */
 export async function POST(request: NextRequest) {
+  if (!FEATURE_FLAGS.ARENA_MVP_V2) {
+    return NextResponse.json({ success: false, error: 'Arena MVP v2 is disabled' }, { status: 503 });
+  }
+
   try {
-    // ==========================================
-    // STEP 1: Get and validate the prompt
-    // ==========================================
-    const body = await request.json();
+    const body = (await request.json()) as CreateComparisonRequest;
     const { prompt } = body;
-    
+    const targetPlatform = parsePlatformDestination(body.targetPlatform);
+
     const validation = validatePrompt(prompt);
     if (!validation.isValid) {
-      return NextResponse.json(
-        { success: false, error: validation.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
     }
-    
-    const trimmedPrompt = prompt.trim();
-    
-    // ==========================================
-    // STEP 2: Check rate limits
-    // ==========================================
-    const ipAddress = getClientIp(request);
-    const rateLimit = await checkRateLimit(ipAddress);
-    
-    if (!rateLimit.allowed) {
+
+    const promptText = prompt.trim();
+    const ip = getClientIp(request);
+    const ipHash = hashIp(ip);
+
+    const slot = acquireGenerationSlot(ipHash);
+    if (!slot.ok) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Rate limit exceeded. You can make ${rateLimit.limit} comparisons per day. Try again tomorrow!`,
-          rateLimitInfo: rateLimit,
+        {
+          success: false,
+          error: 'System is busy. Please retry in a moment.',
         },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '5',
+          },
+        }
       );
     }
-    
-    // ==========================================
-    // STEP 3: Check daily budget
-    // ==========================================
-    const dailyCost = await getDailyCost();
-    if (dailyCost >= DAILY_BUDGET_LIMIT) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Daily budget exceeded. Please try again tomorrow.' 
+
+    try {
+      const limit = await checkAndIncrementLimits(ipHash);
+      if (!limit.allowed) {
+        const message =
+          limit.remaining <= 0
+            ? `Rate limit exceeded. You can make ${limit.limit} runs per day.`
+            : 'Daily budget exceeded. Please try again tomorrow.';
+
+        return NextResponse.json(
+          {
+            success: false,
+            error: message,
+            rateLimitInfo: {
+              current: limit.current,
+              limit: limit.limit,
+              remaining: limit.remaining,
+            },
+          },
+          { status: 429 }
+        );
+      }
+
+      const keySource = body.keySource || 'platform';
+      const keys = resolveKeys(keySource, body.userKeys);
+      const caller = createModelCaller(keys);
+      const drafts = await generateDrafts(promptText, targetPlatform, caller);
+
+      const failedDrafts = drafts.filter((d) => d.status !== 'ok');
+      if (failedDrafts.length === drafts.length) {
+        return NextResponse.json(
+          { success: false, error: 'All draft generations failed. Check API key configuration.' },
+          { status: 503 }
+        );
+      }
+
+      let evaluations = evaluateDrafts(drafts, targetPlatform);
+
+      if (FEATURE_FLAGS.AI_EVALUATION) {
+        try {
+          const aiEvaluations = await evaluateAllDraftsWithAI(drafts, targetPlatform);
+          evaluations = mergeEvaluations(evaluations, aiEvaluations);
+        } catch {
+          // AI evaluation is optional; continue with heuristic only
+        }
+      }
+
+      const runData = buildArenaRunData(drafts, evaluations, targetPlatform);
+      const created = await createArenaRun({
+        promptText,
+        ipHash,
+        userAgent: request.headers.get('user-agent') || null,
+        data: runData,
+      });
+
+      if (!created) {
+        return NextResponse.json({ success: false, error: 'Failed to save arena run' }, { status: 500 });
+      }
+
+      const runPreview = toArenaRunPreview(created.id, created.prompt_text, runData);
+
+      const response: CreateComparisonResponse = {
+        success: true,
+        run: runPreview,
+        degradedCount: failedDrafts.length > 0 ? failedDrafts.length : undefined,
+        rateLimitInfo: {
+          current: limit.current,
+          limit: limit.limit,
+          remaining: limit.remaining,
         },
-        { status: 503 }
-      );
+      };
+
+      return NextResponse.json(response);
+    } finally {
+      slot.release();
     }
-    
-    // ==========================================
-    // STEP 4: Randomize which model is A and B
-    // This is the "blind" part!
-    // ==========================================
-    const [modelA, modelB] = randomizeModels();
-    
-    // ==========================================
-    // STEP 5: Call both APIs in parallel
-    // 
-    // Promise.all means we call both at the same time,
-    // not one after another. This is faster!
-    // ==========================================
-    const [resultA, resultB] = await Promise.all([
-      callModel(modelA, trimmedPrompt),
-      callModel(modelB, trimmedPrompt),
-    ]);
-    
-    // ==========================================
-    // STEP 6: Increment rate limit counter
-    // ==========================================
-    await incrementRateLimit(ipAddress);
-    
-    // ==========================================
-    // STEP 7: Calculate costs
-    // ==========================================
-    const costA = calculateCost(modelA, resultA.inputTokens, resultA.outputTokens);
-    const costB = calculateCost(modelB, resultB.inputTokens, resultB.outputTokens);
-    
-    // ==========================================
-    // STEP 8: Save to database
-    // ==========================================
-    const comparison = await createComparison({
-      prompt_text: trimmedPrompt,
-      prompt_length: trimmedPrompt.length,
-      model_a: modelA,
-      model_b: modelB,
-      response_a: resultA.response,
-      response_b: resultB.response,
-      tokens_input_a: resultA.inputTokens,
-      tokens_output_a: resultA.outputTokens,
-      tokens_input_b: resultB.inputTokens,
-      tokens_output_b: resultB.outputTokens,
-      cost_a_usd: costA,
-      cost_b_usd: costB,
-      total_cost_usd: costA + costB,
-      winner: null,
-      user_id: null, // We'll add auth later
-      ip_address: ipAddress,
-      user_agent: request.headers.get('user-agent') || null,
-    });
-    
-    if (!comparison) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to save comparison' },
-        { status: 500 }
-      );
-    }
-    
-    // ==========================================
-    // STEP 9: Return response to frontend
-    // Note: We DON'T tell the frontend which model is which!
-    // The frontend only knows "A" and "B"
-    // ==========================================
-    return NextResponse.json({
-      success: true,
-      comparison: {
-        id: comparison.id,
-        prompt_text: comparison.prompt_text,
-        response_a: comparison.response_a,
-        response_b: comparison.response_b,
-        // Don't include model_a/model_b here!
-        // That's revealed only after voting
-      },
-      rateLimitInfo: {
-        current: rateLimit.current + 1,
-        limit: rateLimit.limit,
-        remaining: Math.max(0, rateLimit.limit - rateLimit.current - 1),
-      },
-    });
-    
   } catch (error) {
     console.error('Error in comparison API:', error);
-    return NextResponse.json(
-      { success: false, error: 'Something went wrong. Please try again.' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Calls an LLM API based on the model type
- * 
- * @param model - Which model to call
- * @param prompt - The user's prompt
- * @returns Response text and token usage
- */
-async function callModel(
-  model: ModelType,
-  prompt: string
-): Promise<{
-  response: string;
-  inputTokens: number;
-  outputTokens: number;
-}> {
-  // Create an AbortController for timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
-  
-  try {
-    if (model === 'gpt-4o-mini') {
-      // ==========================================
-      // Call OpenAI GPT-4o Mini
-      // ==========================================
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1000, // Limit response length to control costs
-        temperature: 0.7, // Slight creativity but mostly deterministic
-      }, {
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      
-      return {
-        response: response.choices[0]?.message?.content || 'No response',
-        inputTokens: response.usage?.prompt_tokens || estimateTokenCount(prompt),
-        outputTokens: response.usage?.completion_tokens || estimateTokenCount(
-          response.choices[0]?.message?.content || ''
-        ),
-      };
-      
-    } else {
-      // ==========================================
-      // Call Anthropic Claude 3.5 Haiku
-      // ==========================================
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 1000,
-        temperature: 0.7,
-        messages: [{ role: 'user', content: prompt }],
-      }, {
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      
-      // Extract text content from Anthropic response
-      const content = response.content
-        .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
-        .map(block => block.text)
-        .join('');
-      
-      return {
-        response: content || 'No response',
-        inputTokens: response.usage?.input_tokens || estimateTokenCount(prompt),
-        outputTokens: response.usage?.output_tokens || estimateTokenCount(content),
-      };
-    }
-    
-  } catch (error) {
-    clearTimeout(timeoutId);
-    
-    // Check if it's a timeout
-    if (error instanceof Error && error.name === 'AbortError') {
-      return {
-        response: '⏱️ Request timed out (15s limit)',
-        inputTokens: estimateTokenCount(prompt),
-        outputTokens: 0,
-      };
-    }
-    
-    // Other errors
-    console.error(`Error calling ${model}:`, error);
-    return {
-      response: `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      inputTokens: estimateTokenCount(prompt),
-      outputTokens: 0,
-    };
+    return NextResponse.json({ success: false, error: 'Unable to generate drafts right now.' }, { status: 500 });
   }
 }

@@ -1,16 +1,128 @@
-// ============================================
-// BlindLane TypeScript Types
-// These define the shape of our data
-// ============================================
+export type ModelType = 'gpt-4o-mini' | 'claude-3-5-haiku' | 'gemini-2.0-flash';
+export type ProviderType = 'openai' | 'anthropic' | 'google';
+export type VariantType = 'concise' | 'story-driven';
+export type PlatformDestination = 'linkedin' | 'email';
 
-// The two models we support in MVP
-export type ModelType = 'gpt-4o-mini' | 'claude-3-5-haiku';
+export type RunPhase = 'gallery' | 'compare' | 'converged';
+export type DraftStatus = 'ok' | 'timeout' | 'error';
 
-// A user's vote
-export type VoteResult = 'A' | 'B' | 'TIE';
+export type PairVoteChoice = 'BETTER_A' | 'BETTER_B' | 'TIE' | 'SKIP';
+export type LegacyVoteResult = 'A' | 'B' | 'TIE';
 
-// A comparison session
-export interface Comparison {
+export interface DraftResult {
+  id: string;
+  label: string;
+  content: string;
+  contentPreview: string;
+  model: ModelType;
+  variant: VariantType;
+  status: DraftStatus;
+  inputTokens: number;
+  outputTokens: number;
+  tokens: number;
+  costUsd: number;
+  latencyMs: number;
+  errorReason?: 'timeout' | 'provider_error';
+}
+
+export type HighlightCategory = 'hook' | 'impact' | 'cta' | 'insight' | 'weakness';
+
+export interface DraftHighlight {
+  text: string;
+  startIndex: number;
+  endIndex: number;
+  category: HighlightCategory;
+  reason: string;
+}
+
+export interface AiEvaluation {
+  draftId: string;
+  highlights: DraftHighlight[];
+  summary: string;
+  strengthScore: number;
+}
+
+export interface DraftEvaluation {
+  draftId: string;
+  tags: {
+    tone: string;
+    angle: string;
+  };
+  scores: {
+    clarity: number;
+    humanFeel: number;
+    platformFit: number;
+  };
+  similarityClusterId: string;
+  shortlistLabel?: 'TOP_PICK' | 'RUNNER_UP';
+  aiHighlights?: DraftHighlight[];
+  aiSummary?: string;
+}
+
+export interface ComparePair {
+  id: string;
+  draftAId: string;
+  draftBId: string;
+}
+
+export interface VoteEvent {
+  pairId: string;
+  vote: PairVoteChoice;
+  createdAt: string;
+}
+
+export interface ArenaRunData {
+  phase: RunPhase;
+  drafts: DraftResult[];
+  evaluations: DraftEvaluation[];
+  comparePairs: ComparePair[];
+  votes: VoteEvent[];
+  winnerDraftId: string | null;
+  discardedDraftIds: string[];
+  targetPlatform: PlatformDestination;
+  reveal: RevealItem[];
+}
+
+export interface ArenaDraftPreview {
+  id: string;
+  label: string;
+  contentPreview: string;
+  contentFull: string;
+  evaluatorPreview: {
+    tags: string[];
+    clarity: number;
+    humanFeel: number;
+    platformFit: number;
+    shortlistLabel?: 'TOP_PICK' | 'RUNNER_UP';
+    highlights?: DraftHighlight[];
+    aiSummary?: string;
+  };
+}
+
+export interface ArenaRunPreview {
+  id: string;
+  promptText: string;
+  drafts: ArenaDraftPreview[];
+  phase: RunPhase;
+  comparePairs: ComparePair[];
+}
+
+export interface RevealItem {
+  draftId: string;
+  model: ModelType;
+  variant: VariantType;
+  cost: number;
+  latency: number;
+  tokens: number;
+}
+
+export interface ArenaRunRevealed extends ArenaRunPreview {
+  winnerDraftId: string;
+  discardedDraftIds: string[];
+  reveal: RevealItem[];
+}
+
+export interface ComparisonRow {
   id: string;
   created_at: string;
   prompt_text: string;
@@ -26,22 +138,36 @@ export interface Comparison {
   cost_a_usd: number;
   cost_b_usd: number;
   total_cost_usd: number;
-  winner: VoteResult | null;
+  winner: LegacyVoteResult | null;
   voted_at: string | null;
   user_id: string | null;
   ip_address: string | null;
+  user_agent: string | null;
+  run_phase?: RunPhase | null;
+  drafts_json?: ArenaRunData['drafts'] | null;
+  evaluations_json?: ArenaRunData['evaluations'] | null;
+  votes_json?: ArenaRunData['votes'] | null;
+  winner_draft_id?: string | null;
+  discarded_draft_ids?: string[] | null;
+  reveal_json?: RevealItem[] | null;
 }
 
-// What we send to the API to create a comparison
 export interface CreateComparisonRequest {
   prompt: string;
+  targetPlatform?: PlatformDestination;
+  keySource?: 'platform' | 'user';
+  userKeys?: {
+    openai?: string;
+    anthropic?: string;
+    google?: string;
+  };
 }
 
-// What the API returns after creating a comparison
 export interface CreateComparisonResponse {
   success: boolean;
-  comparison?: Comparison;
+  run?: ArenaRunPreview;
   error?: string;
+  degradedCount?: number;
   rateLimitInfo?: {
     current: number;
     limit: number;
@@ -49,56 +175,54 @@ export interface CreateComparisonResponse {
   };
 }
 
-// What we send to vote
 export interface VoteRequest {
-  comparisonId: string;
-  vote: VoteResult;
+  runId: string;
+  pairId: string;
+  vote: PairVoteChoice;
 }
 
-// What the API returns for voting
 export interface VoteResponse {
   success: boolean;
-  comparison?: Comparison;
+  pairId?: string;
+  vote?: PairVoteChoice;
+  aggregateSignals?: {
+    completedVotes: number;
+    totalPairs: number;
+    scores: Record<string, number>;
+  };
   error?: string;
 }
 
-// For displaying in the UI
-export interface ComparisonDisplay {
-  id: string;
-  prompt: string;
-  modelA: {
-    label: 'A';
-    response: string;
-    isStreaming: boolean;
-  };
-  modelB: {
-    label: 'B';
-    response: string;
-    isStreaming: boolean;
-  };
-  hasVoted: boolean;
-  winner?: VoteResult;
-  revealed: boolean;
+export interface ConvergeRequest {
+  runId: string;
+  winnerDraftId: string;
 }
 
-// Cost info for display
-export interface CostInfo {
-  modelA: {
-    name: string;
-    cost: number;
-    inputTokens: number;
-    outputTokens: number;
+export interface ConvergeResponse {
+  success: boolean;
+  workingDraft?: {
+    draftId: string;
+    content: string;
   };
-  modelB: {
-    name: string;
-    cost: number;
-    inputTokens: number;
-    outputTokens: number;
-  };
-  total: number;
+  discardedDraftIds?: string[];
+  reveal?: RevealItem[];
+  error?: string;
 }
 
-// Stats for the leaderboard
+export interface FormatRequest {
+  runId: string;
+  draftId?: string;
+  destination: PlatformDestination;
+}
+
+export interface FormatResponse {
+  success: boolean;
+  formattedContent?: string;
+  markdown?: string;
+  metadata?: Record<string, string | string[]>;
+  error?: string;
+}
+
 export interface ModelStats {
   model_name: string;
   total_votes: number;
@@ -108,30 +232,27 @@ export interface ModelStats {
   win_rate: number;
 }
 
-// API pricing (per 1M tokens)
 export const MODEL_PRICING = {
   'gpt-4o-mini': {
-    input: 0.15,   // $0.15 per 1M input tokens
-    output: 0.60,  // $0.60 per 1M output tokens
+    input: 0.15,
+    output: 0.60,
     name: 'GPT-4o Mini',
     provider: 'OpenAI',
   },
   'claude-3-5-haiku': {
-    input: 0.25,   // $0.25 per 1M input tokens
-    output: 1.25,  // $1.25 per 1M output tokens
+    input: 0.25,
+    output: 1.25,
     name: 'Claude 3.5 Haiku',
     provider: 'Anthropic',
   },
+  'gemini-2.0-flash': {
+    input: 0.10,
+    output: 0.40,
+    name: 'Gemini 2.0 Flash',
+    provider: 'Google',
+  },
 } as const;
 
-// Helper to calculate cost
-export function calculateCost(
-  model: ModelType,
-  inputTokens: number,
-  outputTokens: number
-): number {
-  const pricing = MODEL_PRICING[model];
-  const inputCost = (inputTokens / 1_000_000) * pricing.input;
-  const outputCost = (outputTokens / 1_000_000) * pricing.output;
-  return Number((inputCost + outputCost).toFixed(6));
-}
+// Legacy aliases for compatibility while migrating
+export type Comparison = ComparisonRow;
+export type VoteResult = LegacyVoteResult;

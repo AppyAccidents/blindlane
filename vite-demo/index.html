@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlindLane Demo - AI Model Comparison</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-gradient"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <!-- Logo -->
+        <a href="#" class="logo">
+          <div class="logo-icon">
+            <span class="logo-text">B</span>
+            <div class="logo-status"></div>
+          </div>
+          <div class="logo-brand">
+            <span>Blind</span><span class="logo-accent">Lane</span>
+          </div>
+        </a>
+
+        <!-- Navigation -->
+        <nav class="nav">
+          <a href="#compare" class="nav-link active">Compare</a>
+          <a href="#leaderboard" class="nav-link">Leaderboard</a>
+          <a href="#about" class="nav-link">About</a>
+          <div class="nav-divider"></div>
+          <a href="#admin" class="nav-link">Admin</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="badge badge-orange">
+          <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z"/>
+            <path d="M12 12L20 7.5"/>
+            <path d="M12 12V21"/>
+            <path d="M12 12L4 7.5"/>
+          </svg>
+          <span>Blind AI Comparison</span>
+        </div>
+        <h1 class="hero-title">
+          Compare <span class="text-gradient">AI Models</span> Anonymously
+        </h1>
+        <p class="hero-subtitle">
+          Enter a prompt. Two neural networks respond simultaneously. 
+          Vote for the superior output. Identity revealed post-vote.
+        </p>
+      </section>
+
+      <!-- Rate Limit Status -->
+      <div class="rate-limit">
+        <div class="rate-limit-inner">
+          <span class="rate-limit-label">Daily Quota</span>
+          <div class="rate-limit-bar-container">
+            <div class="rate-limit-bar">
+              <div class="rate-limit-fill" style="width: 60%"></div>
+            </div>
+            <span class="rate-limit-text">6/10</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="main-grid">
+        <!-- Left Column - Input -->
+        <div class="left-column">
+          <div class="card" id="input-card">
+            <div class="card-header">
+              <div class="card-icon card-icon-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="card-title">Enter Prompt</h2>
+                <p class="card-subtitle">What do you want to compare?</p>
+              </div>
+            </div>
+            
+            <form id="compare-form" class="form">
+              <div class="input-wrapper">
+                <textarea 
+                  id="prompt-input"
+                  class="input textarea" 
+                  placeholder="e.g., Explain quantum computing in simple terms..."
+                  maxlength="1000"
+                ></textarea>
+                <div class="input-counter">0/1000</div>
+              </div>
+              
+              <div id="error-message" class="error-message" style="display: none;">
+                Please enter a prompt
+              </div>
+              
+              <button type="submit" class="btn btn-primary">
+                <span>Compare Models</span>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+
+          <!-- Info Cards -->
+          <div class="info-cards">
+            <div class="info-card">
+              <div class="info-icon info-icon-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="info-title">Blind Testing</h4>
+                <p class="info-desc">Models assigned randomly. No bias.</p>
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-icon info-icon-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="info-title">Transparent Costs</h4>
+                <p class="info-desc">See exact API costs. No hidden fees.</p>
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-icon info-icon-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12M19 8a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="info-title">Community Rankings</h4>
+                <p class="info-desc">Vote shapes the leaderboard.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Results -->
+        <div class="right-column">
+          <!-- Empty State -->
+          <div id="empty-state" class="card empty-state">
+            <div class="empty-state-content">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z"/>
+                </svg>
+              </div>
+              <p class="empty-text">Enter a prompt to start comparing AI models</p>
+            </div>
+          </div>
+
+          <!-- Results Container (hidden initially) -->
+          <div id="results-container" style="display: none;">
+            <!-- Model Cards -->
+            <div class="model-grid">
+              <!-- Model A -->
+              <div class="card model-card" id="model-a-card">
+                <div class="model-header">
+                  <div class="model-badge model-badge-orange">A</div>
+                  <div>
+                    <p class="model-name">Model A</p>
+                    <p class="model-status">Hidden until vote</p>
+                  </div>
+                </div>
+                <div class="model-response">
+                  <div id="response-a" class="response-text">Waiting for response...</div>
+                  <span id="cursor-a" class="typing-cursor" style="display: none;"></span>
+                </div>
+                <div id="reveal-a" class="model-reveal" style="display: none;">
+                  <span class="reveal-name">GPT-4o Mini</span>
+                  <span class="reveal-cost">$0.0005 · 450 tokens</span>
+                </div>
+              </div>
+
+              <!-- Model B -->
+              <div class="card model-card model-card-cyan" id="model-b-card">
+                <div class="model-header">
+                  <div class="model-badge model-badge-cyan">B</div>
+                  <div>
+                    <p class="model-name">Model B</p>
+                    <p class="model-status">Hidden until vote</p>
+                  </div>
+                </div>
+                <div class="model-response">
+                  <div id="response-b" class="response-text">Waiting for response...</div>
+                  <span id="cursor-b" class="typing-cursor" style="display: none;"></span>
+                </div>
+                <div id="reveal-b" class="model-reveal model-reveal-cyan" style="display: none;">
+                  <span class="reveal-name">Claude 3.5 Haiku</span>
+                  <span class="reveal-cost">$0.0008 · 520 tokens</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total Cost -->
+            <div id="cost-card" class="card cost-card" style="display: none;">
+              <span class="cost-label">Total Comparison Cost</span>
+              <span class="cost-value">$0.0013</span>
+            </div>
+
+            <!-- Voting Section -->
+            <div id="voting-section" class="card voting-card">
+              <h3 class="voting-title">Cast Your Vote</h3>
+              <p class="voting-subtitle">Which response is better? Identity will be revealed after voting.</p>
+              
+              <div class="voting-buttons">
+                <button id="vote-a" class="btn btn-model-a">Vote A</button>
+                <button id="vote-b" class="btn btn-model-b">Vote B</button>
+                <button id="vote-tie" class="btn btn-secondary">It's a Tie</button>
+              </div>
+            </div>
+
+            <!-- Vote Success -->
+            <div id="vote-success" class="card vote-success" style="display: none;">
+              <div class="success-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Vote Recorded</span>
+              </div>
+              <p class="success-text">You selected Model A as superior.</p>
+              <button id="reset-btn" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span>New Comparison</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard Section -->
+      <section id="leaderboard" class="section">
+        <div class="section-header">
+          <div class="badge badge-orange">
+            <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12M19 8a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <span>Live Rankings</span>
+          </div>
+          <h2 class="section-title">Model <span class="text-gradient">Leaderboard</span></h2>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="card stat-card">
+            <div class="stat-icon stat-icon-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+              </svg>
+            </div>
+            <p class="stat-label">Total Comparisons</p>
+            <p class="stat-value">1,247</p>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-icon stat-icon-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+              </svg>
+            </div>
+            <p class="stat-label">Today's Cost</p>
+            <p class="stat-value">$0.45</p>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-icon stat-icon-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12M19 8a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <p class="stat-label">Current Leader</p>
+            <p class="stat-value">GPT-4o Mini</p>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-icon stat-icon-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 6l-9.5 9.5-5-5L1 18"/>
+              </svg>
+            </div>
+            <p class="stat-label">Budget Used</p>
+            <p class="stat-value">4.5%</p>
+          </div>
+        </div>
+
+        <!-- Budget Progress -->
+        <div class="card">
+          <div class="budget-header">
+            <h3 class="budget-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+              </svg>
+              Daily Budget Usage
+            </h3>
+            <span class="budget-amount">$0.45 / $10.00</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 4.5%"></div>
+          </div>
+          <p class="budget-remaining">$9.55 remaining today</p>
+        </div>
+
+        <!-- Model Rankings -->
+        <div class="rankings">
+          <h3 class="rankings-title">Model Performance</h3>
+          
+          <!-- GPT-4o Mini -->
+          <div class="card ranking-card ranking-card-winner">
+            <div class="ranking-content">
+              <div class="ranking-left">
+                <div class="ranking-badge ranking-badge-gold">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12M19 8a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="ranking-name ranking-name-orange">GPT-4o Mini</p>
+                  <p class="ranking-votes">500 votes</p>
+                </div>
+              </div>
+              
+              <div class="ranking-stats">
+                <div class="ranking-stat">
+                  <p class="ranking-stat-value ranking-stat-green">300</p>
+                  <p class="ranking-stat-label">Wins</p>
+                </div>
+                <div class="ranking-stat">
+                  <p class="ranking-stat-value ranking-stat-red">180</p>
+                  <p class="ranking-stat-label">Losses</p>
+                </div>
+                <div class="ranking-stat">
+                  <p class="ranking-stat-value ranking-stat-yellow">20</p>
+                  <p class="ranking-stat-label">Ties</p>
+                </div>
+              </div>
+              
+              <div class="ranking-right">
+                <p class="ranking-rate">62.5%</p>
+                <p class="ranking-rate-label">WIN RATE</p>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 62.5%"></div>
+            </div>
+          </div>
+
+          <!-- Claude 3.5 Haiku -->
+          <div class="card ranking-card">
+            <div class="ranking-content">
+              <div class="ranking-left">
+                <div class="ranking-badge ranking-badge-cyan">#2</div>
+                <div>
+                  <p class="ranking-name ranking-name-cyan">Claude 3.5 Haiku</p>
+                  <p class="ranking-votes">500 votes</p>
+                </div>
+              </div>
+              
+              <div class="ranking-stats">
+                <div class="ranking-stat">
+                  <p class="ranking-stat-value ranking-stat-green">180</p>
+                  <p class="ranking-stat-label">Wins</p>
+                </div>
+                <div class="ranking-stat">
+                  <p class="ranking-stat-value ranking-stat-red">300</p>
+                  <p class="ranking-stat-label">Losses</p>
+                </div>
+                <div class="ranking-stat">
+                  <p class="ranking-stat-value ranking-stat-yellow">20</p>
+                  <p class="ranking-stat-label">Ties</p>
+                </div>
+              </div>
+              
+              <div class="ranking-right">
+                <p class="ranking-rate">37.5%</p>
+                <p class="ranking-rate-label">WIN RATE</p>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill progress-fill-cyan" style="width: 37.5%"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-left">
+          <span class="footer-status">
+            <span class="status-dot"></span>
+            System Operational
+          </span>
+          <span class="footer-divider">|</span>
+          <span class="footer-version">v0.1.0-alpha</span>
+        </div>
+        <p class="footer-right">Not affiliated with OpenAI or Anthropic</p>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
